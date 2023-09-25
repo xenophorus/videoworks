@@ -1,4 +1,18 @@
-﻿function addNewNull(comp, name, exp) {
+﻿function processProperty(theProp) {
+    if (theProp.propertyType == PropertyType.PROPERTY) {
+        try {
+            log(theProp.name + " " + theProp.value);
+        } catch (e) {
+            log(theProp.name + " " + "NO VALUE");
+        }
+    } else {
+        for (var i = 1; i <= theProp.numProperties; i++) {
+            processProperty(theProp.property(i));
+        }
+    }
+}
+
+function addNewNull(comp, name, exp) {
     var nullLayer = comp.layers.addNull();
     nullLayer.name = name;
     if (exp !== "") {
@@ -54,18 +68,21 @@ function addCircleToLayer(comp, name, size, strokeColor, strokeOpacity,
     var shapeGroup = circleLayer.property("Contents").addProperty("ADBE Vector Group");
     var circle = shapeGroup.property("Contents").addProperty("ADBE Vector Shape - Ellipse");
     circle.property("Size").setValue(size);
+    circle.property("Size").expression = exp2;
 
     var circleStroke = shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Stroke");
     circleStroke.property("Color").setValue(strokeColor);
     circleStroke.property("Opacity").setValue(strokeOpacity);
-    circleStroke.property("Stroke Width").setValue(strokeWidth); 
+    circleStroke.property("Stroke Width").setValue(strokeWidth);
+    
     if (exp1 !== "") {
         circleStroke.property("Color").expression = exp1;
     }
-
+    
     var circleFill = shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Fill");
     circleFill.property("Color").setValue(fillColor);
     circleFill.property("Opacity").setValue(fillOpacity);
+    
     if (exp1 !== "") {
         circleFill.property("Color").expression = exp1;
     }
@@ -74,7 +91,7 @@ function addCircleToLayer(comp, name, size, strokeColor, strokeOpacity,
 
 }
 
-function setExp(comp, layername, begin, end) {
+function setPathExp(comp, layername, begin, end) {
 
     const exp = "offset = [thisComp.width, thisComp.height]/2\n" + 
     "p1 = thisComp.layer(\"" + begin + "\").toComp([0,0]).slice(0,2)\n" + 
@@ -109,6 +126,27 @@ function centerAnchorPoint(layer) {
     var layerPosition = layer.position.value;
     layer.position.setValue([ layerPosition[0] + xAdd, layerPosition[1] + yAdd, layerPosition[2] ]);
 };
+
+function addCheckBox(comp, layer, name, showName) {
+    var chBox = layer.property("Effects").addProperty("ADBE Checkbox Control");
+    chBox.name = name;
+    chBox.property("Checkbox").setValue(true);
+    chBox.property("Checkbox").addToMotionGraphicsTemplateAs(comp, showName);
+}
+
+function addSlider(comp, layer, name, value, minValue, maxValue, showName) {
+    var slider = layer.property("Effects").addProperty("ADBE Slider Control");
+    slider.name = name;
+    slider.property("Slider").setValue(value);
+    slider.property("Slider").expression = "clamp(value, " + minValue + ", " + maxValue + ")";
+}
+
+function addColorControl(comp, layer, name, color, showName) {
+    var colorControl = layer.property("Effects").addProperty("ADBE Color Control");
+    colorControl.name = name;
+    colorControl.property("Color").setValue(color);
+    colorControl.property("Color").addToMotionGraphicsTemplateAs(comp, showName);
+}
 
 function createCallout(comp, num) {
     const centerPoint = "centerPoint_" + num; // "baseDot"
@@ -147,7 +185,11 @@ function createCallout(comp, num) {
         textPosition: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
                 "const s = thisLayer.sourceRectAtTime().width;\n" +
                 "const x = m == 1 ? -20 : 20 + s;\n" +
-                "transform.anchorPoint = [x, 25];"
+                "transform.anchorPoint = [x, 25];",
+
+        innerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"innerCircleSize\")(\"Slider\");\n" + "[temp, temp]",
+
+        outerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSize\")(\"Slider\");\n" + "[temp, temp]",
 
     };
 
@@ -156,32 +198,26 @@ function createCallout(comp, num) {
     aText.position.expression = "const x = thisComp.layer(\"" + centerPoint + "\").transform.position[0];\n" + 
             "const y = thisComp.layer(\"" + centerPoint + "\").transform.position[1];\n" +
             "[x, y];"
-
     aText.transform.anchorPoint.expression = expressions.textPosition;
+    aText.property("ADBE Text Properties").property("ADBE Text Document").addToMotionGraphicsTemplateAs(comp, "Текст коллаута");
+    aText.property("ADBE Text Properties").property("ADBE Text Document").expression = "text.sourceText.style.setFillColor(thisComp.layer(\"" + baseNull + "\").effect(\"textColor\")(\"Color\"))"
     
     var nullProps = comp.layers.addNull();
     nullProps.name = baseNull;
     nullProps.position.setValue([0, 0]);
-    var slider = nullProps.property("Effects").addProperty("ADBE Slider Control");
-    slider.name = "lineThickness";
-    slider.property("Slider").setValue(5);
-    // slider.property("Slider").minValue = 1;
-    // slider.property("Slider").maxValue = 30;
-    slider.property("Slider").expression = "clamp(value, 1, 25)";
 
-    var chBox = nullProps.property("Effects").addProperty("ADBE Checkbox Control");
-    chBox.name = "leftRightSwitch";
-    chBox.property("Checkbox").setValue(true);
+    addSlider(comp, nullProps, "lineThickness", 5, 1, 25, "Толщина линий");
+    addSlider(comp, nullProps, "innerCircleSize", 50, 1, 150, "Размер точки");
+    addSlider(comp, nullProps, "outerCircleSize", 70, 1, 200), "Размер внешнего круга";
 
-    var textColor = nullProps.property("Effects").addProperty("ADBE Color Control");
-    textColor.name = "textColor";
-    textColor.property("Color").setValue([0.9,0.5,0.5]);
+    addCheckBox(comp, nullProps, "leftRightSwitch", "Право/лево");
+    addCheckBox(comp, nullProps, "angleSwitch", "Включить уголок");
+    addCheckBox(comp, nullProps, "outerCircleSwitch", "Включить внешний круг");
+    addCheckBox(comp, nullProps, "secondLineSwitch", "Включить вторую линию");
 
-    var lineColor = nullProps.property("Effects").addProperty("ADBE Color Control");
-    lineColor.name = "lineColor";
-    lineColor.property("Color").setValue([0.4,0.8,0.8]);
+    addColorControl(comp, nullProps, "textColor", [0.9, 0.8, 0.6], "Цвет текста");
+    addColorControl(comp, nullProps, "lineColor", [0.9, 0.6, 0.8], "Цвет линий");
 
-    
     // nulls for main line
     
     addNewNull(comp, arrowPoint, "");
@@ -201,6 +237,7 @@ function createCallout(comp, num) {
         [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);
 
     var lines = ["mainLine", "horizLine", "secondLine"];
+
     for (i = 0; i < lines.length; i++) {
         addShapeToLayer(comp, lines[i], line, [0.9,0.9,0.9], 100, 10, [0, 0], expressions.strokeColor, "", false);
         var lineLayer = comp.layers.byName(lines[i]);
@@ -208,16 +245,16 @@ function createCallout(comp, num) {
         lineLayer.moveAfter(textLayer);
     }
     
-    setExp(comp, lines[0], arrowPoint, centerPoint);
-    setExp(comp, lines[1], centerPoint, endPoint);
-    setExp(comp, lines[2], secondLineStart, secondLineEnd);
+    setPathExp(comp, lines[0], arrowPoint, centerPoint);
+    setPathExp(comp, lines[1], centerPoint, endPoint);
+    setPathExp(comp, lines[2], secondLineStart, secondLineEnd);
 
 
     addCircleToLayer(comp, "innerCircle", [50, 50], 
-                    [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 100, [0, 0], expressions.strokeColor, "");
+                    [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 100, [0, 0], expressions.strokeColor, expressions.innerCircleSizeExp);
     
     addCircleToLayer(comp, "outerCircle", [80, 80], 
-                    [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 0, [0, 0], expressions.strokeColor, "");
+                    [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 0, [0, 0], expressions.strokeColor, expressions.outerCircleSizeExp);
     
 
     var baseLayer = comp.layers.byName("arrowPoint_" + num);
@@ -227,20 +264,45 @@ function createCallout(comp, num) {
         attachedLayers[i].setParentWithJump(baseLayer);
         attachedLayers[i].moveAfter(baseLayer);
     }
-}
 
-function processProperty(theProp) {
-    if (theProp.propertyType == PropertyType.PROPERTY) {
-        try {
-            log(theProp.name + " " + theProp.value);
-        } catch (e) {
-            log(theProp.name + " " + "NO VALUE");
-        }
-    } else {
-        for (var i = 1; i <= theProp.numProperties; i++) {
-            processProperty(theProp.property(i));
-        }
+    comp.layers.byName("outerCircle").property("Opacity").expression = 
+        "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSwitch\")(\"Checkbox\");"
+    comp.layers.byName("angle").property("Opacity").expression = 
+        "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"angleSwitch\")(\"Checkbox\");"
+    comp.layers.byName("secondLine").property("Opacity").expression = 
+        "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"secondLineSwitch\")(\"Checkbox\");"
+
+    comp.layers.byName(baseNull).property("Effects").property("lineThickness")
+        .property("ADBE Slider Control-0001")
+        .addToMotionGraphicsTemplateAs(comp, "Толщина линий");
+
+    comp.layers.byName(baseNull).property("Effects").property("innerCircleSize")
+        .property("ADBE Slider Control-0001")
+        .addToMotionGraphicsTemplateAs(comp, "Размер точки");
+
+    comp.layers.byName(baseNull).property("Effects").property("outerCircleSize")
+        .property("ADBE Slider Control-0001")
+        .addToMotionGraphicsTemplateAs(comp, "Размер внешнего круга");
+
+    var lineThicknessLayers = [
+        comp.layers.byName("outerCircle"),
+        comp.layers.byName("mainLine"),
+        comp.layers.byName("horizLine"),
+        comp.layers.byName("secondLine"),
+    ];
+
+    for (var i = 0; i < lineThicknessLayers.length; i++) {
+        var vectorLayer = lineThicknessLayers[i].property("ADBE Root Vectors Group")
+        .property("ADBE Vector Group")
+        .property("ADBE Vectors Group")
+        .property("ADBE Vector Graphic - Stroke");
+        vectorLayer.property("ADBE Vector Stroke Width").expression = expressions.strokeWidth;
+// размер текста, 
+// размер стрелки
+// анимация2
+
     }
+
 }
 
 function log(input) {
@@ -254,36 +316,43 @@ function log(input) {
 function main () {
     log("Starting at " + new Date().toTimeString() + "================================================");
     
-    var baseComp = app.project.item(1);
-    var dig = generateRandomNumber().toString().split(".")[1].slice(0, 6);
-    var name = "callout_" + dig;
-    var newCallout = app.project.items.addComp(name, 3840, 2160, 1, 60, 50);
+    var baseComp = app.project.activeItem;
 
-    baseComp.layers.add(newCallout);
-    //newCallout.openInViewer();
-    log("Composition " + name + " created");
-    createCallout(newCallout, dig);
-    // var mainArrow = addNewNull(baseComp, "arrow_" + num, "");
-    // var mainCenter = addNewNull(baseComp, "center_" + num, "");
+    if (baseComp instanceof CompItem) {
+        var dig = generateRandomNumber().toString().split(".")[1].slice(0, 6);
+        var name = "callout_" + dig;
+        var newCallout = app.project.items.addComp(name, 3840, 2160, 1, 60, 50);
 
-    var mainArrow = baseComp.layers.addNull();
-    mainArrow.name = "mainArrow" + dig;
-    mainArrow.property("Scale").expression = "[100, 100]";
-    var mainCenter = baseComp.layers.addNull();
-    mainCenter.name = "mainCenter" + dig;
-    mainCenter.property("Scale").expression = "[100, 100]";
+        baseComp.layers.add(newCallout);
+        //newCallout.openInViewer();
+        log("Composition " + name + " created");
+        createCallout(newCallout, dig);
+        baseComp.layers.byName(name).moveToEnd();
 
-    var slaveCenter = newCallout.layers.byName("centerPoint_" + dig);
-    var slaveArrow = newCallout.layers.byName("arrowPoint_" + dig);
+        var mainArrow = baseComp.layers.addNull();
+        mainArrow.name = "mainArrow" + dig;
+        mainArrow.property("Scale").expression = "[100, 100]";
+        var mainCenter = baseComp.layers.addNull();
+        mainCenter.name = "mainCenter" + dig;
+        mainCenter.property("Scale").expression = "[100, 100]";
+
+        var slaveCenter = newCallout.layers.byName("centerPoint_" + dig);
+        var slaveArrow = newCallout.layers.byName("arrowPoint_" + dig);
+        
+        slaveArrow.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainArrow.name + "\").transform.position[0];\n" + 
+        "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainArrow.name + "\").transform.position[1];\n" + 
+        "[x, y]";
+
+        slaveCenter.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[0];\n" + 
+        "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[1];\n" + 
+        "[x, y]";
+    } else {
+        alert("Надо сначала выбрать нужную композицию, потом запускать скрипт!");
+    }
+
+
+
     
-    slaveArrow.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainArrow.name + "\").transform.position[0];\n" + 
-    "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainArrow.name + "\").transform.position[1];\n" + 
-    "[x, y]";
-
-    slaveCenter.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[0];\n" + 
-    "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[1];\n" + 
-    "[x, y]";
-
     var items = app.project.items;
 
     //search for calloutSeq in callout project
