@@ -111,6 +111,23 @@ function setPathExp(comp, layername, begin, end) {
     path.expression = exp;
 }
 
+function setLineLength(comp, layername, exp) {
+
+    var line = comp.layers.byName(layername)
+                .property("ADBE Root Vectors Group")
+                .property("ADBE Vector Group")
+                .property("ADBE Vectors Group");
+                // .property("ADBE Vector Shape - Group");
+                // .property("ADBE Vector Shape");
+    var trim = line.addProperty("ADBE Vector Filter - Trim");
+    var trimStart = trim.property("ADBE Vector Trim Start");
+    trimStart.expression = exp;
+    
+    
+    log(1);
+    // path.expression = exp;
+}
+
 function centerAnchorPoint(layer) {
     // https://community.adobe.com/t5/after-effects-discussions/centering-the-anchor-point/m-p/9350657
     var comp = layer.containingComp;
@@ -138,8 +155,6 @@ function addSlider(layer, name, value) {
     var slider = layer.property("Effects").addProperty("ADBE Slider Control");
     slider.name = name;
     slider.property("Slider").setValue(value);
-    processProperty(slider);
-    //slider.property("Slider").expression = "clamp(value, " + minValue + ", " + maxValue + ")";
 }
 
 function addColorControl(comp, layer, name, color, showName) {
@@ -204,7 +219,18 @@ function createCallout(comp, num) {
         outerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSize\")(\"Slider\");\n" + "[temp, temp]",
 
         angleSize: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"arrowSize\")(\"Slider\");\n" + 
-                "[temp, temp];"
+                "[temp, temp];",
+        
+        lineLength: "var startP = thisComp.layer(\"" + arrowPoint + "\").transform.position;\n" +
+                "var endP = thisComp.layer(\"" + centerPoint + "\").transform.position;\n" +
+                "var len = Math.sqrt(Math.pow((startP[0] - endP[0]), 2) + Math.pow((startP[1] - endP[1]), 2));\n" +
+                "var rad = thisComp.layer(\"outerCircle\").content(\"Group 1\").content(\"Ellipse Path 1\").size[1] / 2;\n" +
+                
+                "if (thisComp.layer(\"outerCircle\").transform.opacity > 0) {\n" +
+                "    content(\"Group 1\").content(\"Trim Paths 1\").start = rad / (len / 100);\n" +
+                "} else {\n" +
+                "    content(\"Group 1\").content(\"Trim Paths 1\").start = 0;\n" +
+                "}",
 
     };
 
@@ -220,6 +246,8 @@ function createCallout(comp, num) {
     var nullProps = comp.layers.addNull();
     nullProps.name = baseNull;
     nullProps.position.setValue([0, 0]);
+
+    // adding controls
 
     addSlider(nullProps, "lineThickness", 5);
     addSlider(nullProps, "innerCircleSize", 50);
@@ -268,6 +296,7 @@ function createCallout(comp, num) {
     setPathExp(comp, lines[1], centerPoint, endPoint);
     setPathExp(comp, lines[2], secondLineStart, secondLineEnd);
 
+    setLineLength(comp, "mainLine", expressions.lineLength);
 
     addCircleToLayer(comp, "innerCircle", [50, 50], 
                     [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 100, [0, 0], expressions.strokeColor, expressions.innerCircleSizeExp);
@@ -289,33 +318,10 @@ function createCallout(comp, num) {
     attachCheckBox(comp, "secondLine", baseNull);
     attachCheckBox(comp, "innerCircle", baseNull);
 
-    // comp.layers.byName("outerCircle").property("Opacity").expression = 
-    //     "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSwitch\")(\"Checkbox\");"
-    // comp.layers.byName("angle").property("Opacity").expression = 
-    //     "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"angleSwitch\")(\"Checkbox\");"
-    // comp.layers.byName("secondLine").property("Opacity").expression = 
-    //     "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"secondLineSwitch\")(\"Checkbox\");"
-
     addToMGT(comp, "lineThickness", "Толщина линий", baseNull);
     addToMGT(comp, "innerCircleSize", "Размер точки", baseNull);
     addToMGT(comp, "outerCircleSize", "Размер внешнего круга", baseNull);
     addToMGT(comp, "arrowSize", "Размер стрелки", baseNull);
-
-    // comp.layers.byName(baseNull).property("Effects").property("lineThickness")
-    //     .property("ADBE Slider Control-0001")
-    //     .addToMotionGraphicsTemplateAs(comp, "Толщина линий");
-
-    // comp.layers.byName(baseNull).property("Effects").property("innerCircleSize")
-    //     .property("ADBE Slider Control-0001")
-    //     .addToMotionGraphicsTemplateAs(comp, "Размер точки");
-
-    // comp.layers.byName(baseNull).property("Effects").property("outerCircleSize")
-    //     .property("ADBE Slider Control-0001")
-    //     .addToMotionGraphicsTemplateAs(comp, "Размер внешнего круга");
-
-    // comp.layers.byName(baseNull).property("Effects").property("arrowSize")
-    //     .property("ADBE Slider Control-0001")
-    //     .addToMotionGraphicsTemplateAs(comp, "Размер стрелки");
 
     var lineThicknessLayers = [
         comp.layers.byName("outerCircle"), comp.layers.byName("mainLine"),
@@ -329,7 +335,6 @@ function createCallout(comp, num) {
         .property("ADBE Vector Graphic - Stroke");
         vectorLayer.property("ADBE Vector Stroke Width").expression = expressions.strokeWidth;
 
-// размер стрелки
 // анимация2
 
     }
