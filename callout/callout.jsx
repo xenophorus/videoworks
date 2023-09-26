@@ -134,11 +134,12 @@ function addCheckBox(comp, layer, name, showName) {
     chBox.property("Checkbox").addToMotionGraphicsTemplateAs(comp, showName);
 }
 
-function addSlider(comp, layer, name, value, minValue, maxValue, showName) {
+function addSlider(layer, name, value) {
     var slider = layer.property("Effects").addProperty("ADBE Slider Control");
     slider.name = name;
     slider.property("Slider").setValue(value);
-    slider.property("Slider").expression = "clamp(value, " + minValue + ", " + maxValue + ")";
+    processProperty(slider);
+    //slider.property("Slider").expression = "clamp(value, " + minValue + ", " + maxValue + ")";
 }
 
 function addColorControl(comp, layer, name, color, showName) {
@@ -146,6 +147,17 @@ function addColorControl(comp, layer, name, color, showName) {
     colorControl.name = name;
     colorControl.property("Color").setValue(color);
     colorControl.property("Color").addToMotionGraphicsTemplateAs(comp, showName);
+}
+
+function attachCheckBox(comp, name, baseNull) {
+    var layerOpacity = comp.layers.byName(name).property("Opacity");
+    layerOpacity.expression = "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"" + name + "Switch\")(\"Checkbox\");"
+}
+
+function addToMGT(comp, name, rusName, baseNull) {
+    comp.layers.byName(baseNull).property("Effects").property(name)
+        .property("ADBE Slider Control-0001")
+        .addToMotionGraphicsTemplateAs(comp, rusName);
 }
 
 function createCallout(comp, num) {
@@ -191,6 +203,9 @@ function createCallout(comp, num) {
 
         outerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSize\")(\"Slider\");\n" + "[temp, temp]",
 
+        angleSize: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"arrowSize\")(\"Slider\");\n" + 
+                "[temp, temp];"
+
     };
 
     var aText = comp.layers.addText("Callout_" + num);
@@ -206,12 +221,14 @@ function createCallout(comp, num) {
     nullProps.name = baseNull;
     nullProps.position.setValue([0, 0]);
 
-    addSlider(comp, nullProps, "lineThickness", 5, 1, 25, "Толщина линий");
-    addSlider(comp, nullProps, "innerCircleSize", 50, 1, 150, "Размер точки");
-    addSlider(comp, nullProps, "outerCircleSize", 70, 1, 200), "Размер внешнего круга";
+    addSlider(nullProps, "lineThickness", 5);
+    addSlider(nullProps, "innerCircleSize", 50);
+    addSlider(nullProps, "outerCircleSize", 70);
+    addSlider(nullProps, "arrowSize", 20);
 
     addCheckBox(comp, nullProps, "leftRightSwitch", "Право/лево");
     addCheckBox(comp, nullProps, "angleSwitch", "Включить уголок");
+    addCheckBox(comp, nullProps, "innerCircleSwitch", "Включить внутренний круг");
     addCheckBox(comp, nullProps, "outerCircleSwitch", "Включить внешний круг");
     addCheckBox(comp, nullProps, "secondLineSwitch", "Включить вторую линию");
 
@@ -232,6 +249,8 @@ function createCallout(comp, num) {
         [[0, 0], [0, 0], [0, 0]], [[0, 0], [0, 0], [0, 0]], false);
     
     addShapeToLayer(comp, "angle", angleShape, [0.2,0.2,0.2], 100, 10, [0, 0], "", expressions.angleRotation, true);
+
+    comp.layers.byName("angle").property("Scale").expression = expressions.angleSize;
     
     var line = createShape([[100, 100], [200, 300]], 
         [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);
@@ -265,30 +284,42 @@ function createCallout(comp, num) {
         attachedLayers[i].moveAfter(baseLayer);
     }
 
-    comp.layers.byName("outerCircle").property("Opacity").expression = 
-        "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSwitch\")(\"Checkbox\");"
-    comp.layers.byName("angle").property("Opacity").expression = 
-        "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"angleSwitch\")(\"Checkbox\");"
-    comp.layers.byName("secondLine").property("Opacity").expression = 
-        "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"secondLineSwitch\")(\"Checkbox\");"
+    attachCheckBox(comp, "outerCircle", baseNull);
+    attachCheckBox(comp, "angle", baseNull);
+    attachCheckBox(comp, "secondLine", baseNull);
+    attachCheckBox(comp, "innerCircle", baseNull);
 
-    comp.layers.byName(baseNull).property("Effects").property("lineThickness")
-        .property("ADBE Slider Control-0001")
-        .addToMotionGraphicsTemplateAs(comp, "Толщина линий");
+    // comp.layers.byName("outerCircle").property("Opacity").expression = 
+    //     "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSwitch\")(\"Checkbox\");"
+    // comp.layers.byName("angle").property("Opacity").expression = 
+    //     "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"angleSwitch\")(\"Checkbox\");"
+    // comp.layers.byName("secondLine").property("Opacity").expression = 
+    //     "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"secondLineSwitch\")(\"Checkbox\");"
 
-    comp.layers.byName(baseNull).property("Effects").property("innerCircleSize")
-        .property("ADBE Slider Control-0001")
-        .addToMotionGraphicsTemplateAs(comp, "Размер точки");
+    addToMGT(comp, "lineThickness", "Толщина линий", baseNull);
+    addToMGT(comp, "innerCircleSize", "Размер точки", baseNull);
+    addToMGT(comp, "outerCircleSize", "Размер внешнего круга", baseNull);
+    addToMGT(comp, "arrowSize", "Размер стрелки", baseNull);
 
-    comp.layers.byName(baseNull).property("Effects").property("outerCircleSize")
-        .property("ADBE Slider Control-0001")
-        .addToMotionGraphicsTemplateAs(comp, "Размер внешнего круга");
+    // comp.layers.byName(baseNull).property("Effects").property("lineThickness")
+    //     .property("ADBE Slider Control-0001")
+    //     .addToMotionGraphicsTemplateAs(comp, "Толщина линий");
+
+    // comp.layers.byName(baseNull).property("Effects").property("innerCircleSize")
+    //     .property("ADBE Slider Control-0001")
+    //     .addToMotionGraphicsTemplateAs(comp, "Размер точки");
+
+    // comp.layers.byName(baseNull).property("Effects").property("outerCircleSize")
+    //     .property("ADBE Slider Control-0001")
+    //     .addToMotionGraphicsTemplateAs(comp, "Размер внешнего круга");
+
+    // comp.layers.byName(baseNull).property("Effects").property("arrowSize")
+    //     .property("ADBE Slider Control-0001")
+    //     .addToMotionGraphicsTemplateAs(comp, "Размер стрелки");
 
     var lineThicknessLayers = [
-        comp.layers.byName("outerCircle"),
-        comp.layers.byName("mainLine"),
-        comp.layers.byName("horizLine"),
-        comp.layers.byName("secondLine"),
+        comp.layers.byName("outerCircle"), comp.layers.byName("mainLine"),
+        comp.layers.byName("horizLine"), comp.layers.byName("secondLine"),
     ];
 
     for (var i = 0; i < lineThicknessLayers.length; i++) {
@@ -297,7 +328,7 @@ function createCallout(comp, num) {
         .property("ADBE Vectors Group")
         .property("ADBE Vector Graphic - Stroke");
         vectorLayer.property("ADBE Vector Stroke Width").expression = expressions.strokeWidth;
-// размер текста, 
+
 // размер стрелки
 // анимация2
 
