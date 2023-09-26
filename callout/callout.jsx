@@ -58,7 +58,6 @@ function addShapeToLayer(comp, name, shape, color, opacity, stroke, position, ex
     }
 
     layer.transform.position.setValue(position);
-
 }
 
 function addCircleToLayer(comp, name, size, strokeColor, strokeOpacity, 
@@ -88,18 +87,16 @@ function addCircleToLayer(comp, name, size, strokeColor, strokeOpacity,
     }
     
     circleLayer.transform.position.setValue(position);
-
 }
 
 function setPathExp(comp, layername, begin, end) {
-
     const exp = "offset = [thisComp.width, thisComp.height]/2\n" + 
-    "p1 = thisComp.layer(\"" + begin + "\").toComp([0,0]).slice(0,2)\n" + 
-    "p2 = thisComp.layer(\"" + end + "\").toComp([0,0]).slice(0,2)\n" + 
-    "ps = [p1, p2]\n" + 
-    "in_tangents = []\n" + 
-    "out_tangents = []\n" + 
-    "createPath(ps, in_tangents, out_tangents, is_closed=false)"
+            "p1 = thisComp.layer(\"" + begin + "\").toComp([0,0]).slice(0,2)\n" + 
+            "p2 = thisComp.layer(\"" + end + "\").toComp([0,0]).slice(0,2)\n" + 
+            "ps = [p1, p2]\n" + 
+            "in_tangents = []\n" + 
+            "out_tangents = []\n" + 
+            "createPath(ps, in_tangents, out_tangents, is_closed=false)"
 
     var path = comp.layers.byName(layername)
                 .property("ADBE Root Vectors Group")
@@ -112,20 +109,13 @@ function setPathExp(comp, layername, begin, end) {
 }
 
 function setLineLength(comp, layername, exp) {
-
     var line = comp.layers.byName(layername)
                 .property("ADBE Root Vectors Group")
                 .property("ADBE Vector Group")
                 .property("ADBE Vectors Group");
-                // .property("ADBE Vector Shape - Group");
-                // .property("ADBE Vector Shape");
     var trim = line.addProperty("ADBE Vector Filter - Trim");
     var trimStart = trim.property("ADBE Vector Trim Start");
     trimStart.expression = exp;
-    
-    
-    log(1);
-    // path.expression = exp;
 }
 
 function centerAnchorPoint(layer) {
@@ -240,8 +230,10 @@ function createCallout(comp, num) {
             "const y = thisComp.layer(\"" + centerPoint + "\").transform.position[1];\n" +
             "[x, y];"
     aText.transform.anchorPoint.expression = expressions.textPosition;
-    aText.property("ADBE Text Properties").property("ADBE Text Document").addToMotionGraphicsTemplateAs(comp, "Текст коллаута");
-    aText.property("ADBE Text Properties").property("ADBE Text Document").expression = "text.sourceText.style.setFillColor(thisComp.layer(\"" + baseNull + "\").effect(\"textColor\")(\"Color\"))"
+    aText.property("ADBE Text Properties").property("ADBE Text Document")
+            .addToMotionGraphicsTemplateAs(comp, "Текст коллаута");
+    aText.property("ADBE Text Properties").property("ADBE Text Document")
+            .expression = "text.sourceText.style.setFillColor(thisComp.layer(\"" + baseNull + "\").effect(\"textColor\")(\"Color\"))"
     
     var nullProps = comp.layers.addNull();
     nullProps.name = baseNull;
@@ -269,7 +261,7 @@ function createCallout(comp, num) {
     addNewNull(comp, centerPoint, "");        
     addNewNull(comp, "endPoint_" + num, expressions.endPointExp);
     addNewNull(comp, "secondLineStart_" + num, expressions.secondLineStartExp);
-    addNewNull(comp, "secondLineEnd_" + num, expressions.secondLineEndExp)
+    addNewNull(comp, "secondLineEnd_" + num, expressions.secondLineEndExp);
 
     //shapes
 
@@ -299,14 +291,17 @@ function createCallout(comp, num) {
     setLineLength(comp, "mainLine", expressions.lineLength);
 
     addCircleToLayer(comp, "innerCircle", [50, 50], 
-                    [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 100, [0, 0], expressions.strokeColor, expressions.innerCircleSizeExp);
+                    [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 100, [0, 0], 
+                    expressions.strokeColor, expressions.innerCircleSizeExp);
     
     addCircleToLayer(comp, "outerCircle", [80, 80], 
-                    [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 0, [0, 0], expressions.strokeColor, expressions.outerCircleSizeExp);
+                    [0.8,0.8,0.8], 100, 10, [0.8,0.8,0.8], 0, [0, 0], 
+                    expressions.strokeColor, expressions.outerCircleSizeExp);
     
 
     var baseLayer = comp.layers.byName("arrowPoint_" + num);
-    var attachedLayers = [comp.layers.byName("innerCircle"), comp.layers.byName("outerCircle"), comp.layers.byName("angle")];
+    var attachedLayers = [comp.layers.byName("innerCircle"), 
+                comp.layers.byName("outerCircle"), comp.layers.byName("angle")];
 
     for (i = 0; i < attachedLayers.length; i++) {
         attachedLayers[i].setParentWithJump(baseLayer);
@@ -324,8 +319,10 @@ function createCallout(comp, num) {
     addToMGT(comp, "arrowSize", "Размер стрелки", baseNull);
 
     var lineThicknessLayers = [
-        comp.layers.byName("outerCircle"), comp.layers.byName("mainLine"),
-        comp.layers.byName("horizLine"), comp.layers.byName("secondLine"),
+        comp.layers.byName("outerCircle"), 
+        comp.layers.byName("mainLine"),
+        comp.layers.byName("horizLine"), 
+        comp.layers.byName("secondLine"),
     ];
 
     for (var i = 0; i < lineThicknessLayers.length; i++) {
@@ -336,9 +333,7 @@ function createCallout(comp, num) {
         vectorLayer.property("ADBE Vector Stroke Width").expression = expressions.strokeWidth;
 
 // анимация2
-
     }
-
 }
 
 function log(input) {
@@ -387,8 +382,6 @@ function main () {
     }
 
 
-
-    
     var items = app.project.items;
 
     //search for calloutSeq in callout project
