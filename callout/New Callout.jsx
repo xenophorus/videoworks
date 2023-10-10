@@ -5,6 +5,9 @@
         } catch (e) {
             log(theProp.name + " " + "NO VALUE");
         }
+        if (theProp.name === "Skew Axis") {
+            log(1);
+        }
     } else {
         for (var i = 1; i <= theProp.numProperties; i++) {
             processProperty(theProp.property(i));
@@ -200,6 +203,8 @@ function createCallout(comp, num) {
                 "transform.rotation = angle;",
 
         strokeColor: "thisComp.layer(\"" + baseNull + "\").effect(\"lineColor\")(\"Color\");",
+        
+        arrowColor: "thisComp.layer(\"" + baseNull + "\").effect(\"arrowColor\")(\"Color\");",
 
         strokeWidth: "thisComp.layer(\"" + baseNull + "\").effect(\"lineThickness\")(\"Slider\");",
 
@@ -267,13 +272,14 @@ function createCallout(comp, num) {
     addSlider(nullProps, "arrowSize", 20);
 
     addCheckBox(comp, nullProps, "leftRightSwitch", "Право/лево");
-    addCheckBox(comp, nullProps, "angleSwitch", "Включить уголок");
+    addCheckBox(comp, nullProps, "angleSwitch", "Включить указатель");
     addCheckBox(comp, nullProps, "innerCircleSwitch", "Включить внутренний круг");
     addCheckBox(comp, nullProps, "outerCircleSwitch", "Включить внешний круг");
     addCheckBox(comp, nullProps, "secondLineSwitch", "Включить вторую линию");
 
     addColorControl(comp, nullProps, "textColor", [0.9, 0.9, 0.95], "Цвет текста");
     addColorControl(comp, nullProps, "lineColor", [0.6, 0.6, 0.65], "Цвет линий");
+    addColorControl(comp, nullProps, "arrowColor", [0.2, 0.2, 0.22], "Цвет указателя");
 
     // nulls for main line
     
@@ -290,8 +296,29 @@ function createCallout(comp, num) {
     
     addShapeToLayer(comp, "angle", angleShape, [0.2,0.2,0.2], 100, 15, [0, 0], "", expressions.angleRotation, true);
 
-    comp.layers.byName("angle").property("Scale").expression = expressions.angleSize;
+    var arrowLayer = comp.layers.byName("angle");
+
+    arrowLayer.property("Scale").expression = expressions.angleSize;
+
+    var arrow = arrowLayer.property("Contents")
+            .property("ADBE Vector Group");
     
+    var arrowColor = arrow
+            .property("Contents")
+            .property("ADBE Vector Graphic - Stroke").property("Color");
+
+    var arrowOpacity = arrow
+            .property("ADBE Vector Transform Group")
+            .property("ADBE Vector Group Opacity");
+
+    arrowOpacity.addKey(animationStart + 0.1);
+    arrowOpacity.addKey(lineAppearance + 0.1);
+    arrowOpacity.setValueAtKey(1, 0);
+    arrowOpacity.setValueAtKey(2, 100);
+
+    arrowColor.expression = expressions.arrowColor;
+
+
     var line = createShape([[100, 100], [200, 300]], 
         [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);
 
@@ -362,10 +389,10 @@ function createCallout(comp, num) {
     attachCheckBox(comp, "innerCircle", baseNull);
 
     addToMGT(comp, "lineThickness", "Толщина линий", baseNull);
-    addToMGT(comp, "innerCircleSize", "Размер точки", baseNull);
+    addToMGT(comp, "innerCircleSize", "Размер внутреннего круга", baseNull);
     addToMGT(comp, "outerCircleSize", "Размер внешнего круга", baseNull);
-    addToMGT(comp, "arrowSize", "Размер стрелки", baseNull);
-    addToMGT(comp, "angleThickness", "Толщина стрелки", baseNull);
+    addToMGT(comp, "arrowSize", "Размер указателя", baseNull);
+    addToMGT(comp, "angleThickness", "Толщина указателя", baseNull);
 
     var lineThicknessLayers = [
         comp.layers.byName("outerCircle"), 
@@ -391,9 +418,10 @@ function createCallout(comp, num) {
     var animationLayers = [
         comp.layers.byName("outerCircle"),
         comp.layers.byName("innerCircle"),
-        comp.layers.byName("angle"),
         //comp.layers.byName("textField"),
     ];
+
+    //processProperty(comp.layers.byName("angle"));
 
     for (var i = 0; i < animationLayers.length; i++) {
         var aLayer = animationLayers[i].property("Scale");
@@ -407,15 +435,13 @@ function createCallout(comp, num) {
 
 }
  
-/*
 function log(input) {
     $.writeln(input);
-    var logFile = File("e:/logfile.txt");
-    logFile.open("a");
-    logFile.writeln(input);
-    logFile.close();
+    // var logFile = File("e:/logfile.txt");
+    // logFile.open("a");
+    // logFile.writeln(input);
+    // logFile.close();
 }
-*/
 
 function main () {
     log("Starting at " + new Date().toTimeString() + "================================================");
