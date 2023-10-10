@@ -109,11 +109,11 @@ function setPathExp(comp, layername, begin, end) {
 }
 
 function setLineLength(comp, layername, exp) {
-    var line = comp.layers.byName(layername)
+    var trim = comp.layers.byName(layername)
                 .property("ADBE Root Vectors Group")
                 .property("ADBE Vector Group")
-                .property("ADBE Vectors Group");
-    var trim = line.addProperty("ADBE Vector Filter - Trim");
+                .property("ADBE Vectors Group")
+                .property("ADBE Vector Filter - Trim");
     var trimStart = trim.property("ADBE Vector Trim Start");
     trimStart.expression = exp;
 }
@@ -172,6 +172,10 @@ function createCallout(comp, num) {
     const endPoint = "endPoint_" + num; // baseLineEnd
     const secondLineStart = "secondLineStart_" + num; //
     const secondLineEnd = "secondLineEnd_" + num; //
+    const animationStart = 0.0;
+    const lineAppearance = 0.2;
+    const animationEnd = 0.6;
+
 
     const expressions = {
         endPointExp: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
@@ -198,6 +202,8 @@ function createCallout(comp, num) {
         strokeColor: "thisComp.layer(\"" + baseNull + "\").effect(\"lineColor\")(\"Color\");",
 
         strokeWidth: "thisComp.layer(\"" + baseNull + "\").effect(\"lineThickness\")(\"Slider\");",
+
+        angleThickness: "thisComp.layer(\"" + baseNull + "\").effect(\"angleThickness\")(\"Slider\");",
 
         textPosition: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
                 "const s = thisLayer.sourceRectAtTime().width;\n" +
@@ -234,7 +240,20 @@ function createCallout(comp, num) {
             .addToMotionGraphicsTemplateAs(comp, "Текст коллаута");
     aText.property("ADBE Text Properties").property("ADBE Text Document")
             .expression = "text.sourceText.style.setFillColor(thisComp.layer(\"" + baseNull + "\").effect(\"textColor\")(\"Color\"))"
-    
+
+    var textOpacity = aText.property("Opacity");
+    var textScale = aText.property("Scale");
+
+    textOpacity.addKey(animationEnd * 0.5);
+    textOpacity.addKey(animationEnd);
+    textOpacity.setValueAtKey(1, 0);
+    textOpacity.setValueAtKey(2, 100);
+
+    textScale.addKey(animationEnd * 0.5);
+    textScale.addKey(animationEnd);
+    textScale.setValueAtKey(1, [80, 80]);
+    textScale.setValueAtKey(2, [100, 100]);
+
     var nullProps = comp.layers.addNull();
     nullProps.name = baseNull;
     nullProps.position.setValue([0, 0]);
@@ -242,6 +261,7 @@ function createCallout(comp, num) {
     // adding controls
 
     addSlider(nullProps, "lineThickness", 5);
+    addSlider(nullProps, "angleThickness", 8);
     addSlider(nullProps, "innerCircleSize", 50);
     addSlider(nullProps, "outerCircleSize", 70);
     addSlider(nullProps, "arrowSize", 20);
@@ -252,8 +272,8 @@ function createCallout(comp, num) {
     addCheckBox(comp, nullProps, "outerCircleSwitch", "Включить внешний круг");
     addCheckBox(comp, nullProps, "secondLineSwitch", "Включить вторую линию");
 
-    addColorControl(comp, nullProps, "textColor", [0.9, 0.8, 0.6], "Цвет текста");
-    addColorControl(comp, nullProps, "lineColor", [0.9, 0.6, 0.8], "Цвет линий");
+    addColorControl(comp, nullProps, "textColor", [0.9, 0.9, 0.95], "Цвет текста");
+    addColorControl(comp, nullProps, "lineColor", [0.6, 0.6, 0.65], "Цвет линий");
 
     // nulls for main line
     
@@ -265,10 +285,10 @@ function createCallout(comp, num) {
 
     //shapes
 
-    var angleShape = createShape([[0, 0], [20, 20], [40, 0]],
+    var angleShape = createShape([[0, 0], [40, 60], [80, 0]],
         [[0, 0], [0, 0], [0, 0]], [[0, 0], [0, 0], [0, 0]], false);
     
-    addShapeToLayer(comp, "angle", angleShape, [0.2,0.2,0.2], 100, 10, [0, 0], "", expressions.angleRotation, true);
+    addShapeToLayer(comp, "angle", angleShape, [0.2,0.2,0.2], 100, 15, [0, 0], "", expressions.angleRotation, true);
 
     comp.layers.byName("angle").property("Scale").expression = expressions.angleSize;
     
@@ -282,6 +302,34 @@ function createCallout(comp, num) {
         var lineLayer = comp.layers.byName(lines[i]);
         var textLayer = comp.layers.byName("textField");
         lineLayer.moveAfter(textLayer);
+
+        var trim = lineLayer.property("ADBE Root Vectors Group")
+                .property("ADBE Vector Group")
+                .property("ADBE Vectors Group")
+                .addProperty("ADBE Vector Filter - Trim");
+        var trimEnd = trim.property("ADBE Vector Trim End");
+        
+        if (lineLayer.name == "mainLine") {
+            var opacity = lineLayer.property("Opacity");
+            opacity.addKey(lineAppearance - 0.01);
+            opacity.addKey(lineAppearance);
+            opacity.setValueAtKey(1, 0);
+            opacity.setValueAtKey(2, 100);
+            trimEnd.addKey(animationStart + lineAppearance);
+            trimEnd.addKey(animationEnd / 2 + lineAppearance);
+            trimEnd.setValueAtKey(1, 0);
+            trimEnd.setValueAtKey(2, 100);
+        } else if (lineLayer.name == "horizLine") {
+            trimEnd.addKey(animationEnd * 0.5 + lineAppearance);
+            trimEnd.addKey(animationEnd + lineAppearance);
+            trimEnd.setValueAtKey(1, 0);
+            trimEnd.setValueAtKey(2, 100);
+        } else { //secondLine
+            trimEnd.addKey(animationEnd * 0.65 + lineAppearance);
+            trimEnd.addKey(animationEnd + lineAppearance);
+            trimEnd.setValueAtKey(1, 0);
+            trimEnd.setValueAtKey(2, 100);
+        }
     }
     
     setPathExp(comp, lines[0], arrowPoint, centerPoint);
@@ -317,6 +365,7 @@ function createCallout(comp, num) {
     addToMGT(comp, "innerCircleSize", "Размер точки", baseNull);
     addToMGT(comp, "outerCircleSize", "Размер внешнего круга", baseNull);
     addToMGT(comp, "arrowSize", "Размер стрелки", baseNull);
+    addToMGT(comp, "angleThickness", "Толщина стрелки", baseNull);
 
     var lineThicknessLayers = [
         comp.layers.byName("outerCircle"), 
@@ -331,11 +380,34 @@ function createCallout(comp, num) {
         .property("ADBE Vectors Group")
         .property("ADBE Vector Graphic - Stroke");
         vectorLayer.property("ADBE Vector Stroke Width").expression = expressions.strokeWidth;
-
-// анимация2
     }
-}
 
+    var vectorLayer = comp.layers.byName("angle").property("ADBE Root Vectors Group")
+        .property("ADBE Vector Group")
+        .property("ADBE Vectors Group")
+        .property("ADBE Vector Graphic - Stroke");
+    vectorLayer.property("ADBE Vector Stroke Width").expression = expressions.angleThickness;
+
+    var animationLayers = [
+        comp.layers.byName("outerCircle"),
+        comp.layers.byName("innerCircle"),
+        comp.layers.byName("angle"),
+        //comp.layers.byName("textField"),
+    ];
+
+    for (var i = 0; i < animationLayers.length; i++) {
+        var aLayer = animationLayers[i].property("Scale");
+        aLayer.addKey(animationStart);
+        aLayer.addKey(lineAppearance);
+        aLayer.addKey(lineAppearance + 0.1);
+        aLayer.setValueAtKey(1, [0, 0]);
+        aLayer.setValueAtKey(2, [120, 120]);
+        aLayer.setValueAtKey(3, [100, 100]);
+    }
+
+}
+ 
+/*
 function log(input) {
     $.writeln(input);
     var logFile = File("e:/logfile.txt");
@@ -343,6 +415,7 @@ function log(input) {
     logFile.writeln(input);
     logFile.close();
 }
+*/
 
 function main () {
     log("Starting at " + new Date().toTimeString() + "================================================");
@@ -358,7 +431,8 @@ function main () {
         //newCallout.openInViewer();
         log("Composition " + name + " created");
         createCallout(newCallout, dig);
-        baseComp.layers.byName(name).moveToEnd();
+        baseComp.layers.byName(name).moveToBeginning();
+        baseComp.layers.byName(name).locked = true;
 
         var mainArrow = baseComp.layers.addNull();
         mainArrow.name = "mainArrow" + dig;
@@ -369,6 +443,9 @@ function main () {
 
         var slaveCenter = newCallout.layers.byName("centerPoint_" + dig);
         var slaveArrow = newCallout.layers.byName("arrowPoint_" + dig);
+
+        slaveCenter.moveToBeginning();
+        slaveArrow.moveToBeginning();
         
         slaveArrow.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainArrow.name + "\").transform.position[0];\n" + 
         "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainArrow.name + "\").transform.position[1];\n" + 
