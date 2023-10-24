@@ -73,20 +73,26 @@ function addCheckBox(comp, layer, name, showName) {
     chBox.property("Checkbox").addToMotionGraphicsTemplateAs(comp, showName);
 }
 
-function addSlider(comp, layer, name, value, showName) {
+function addSlider(comp, layer, name, value, showName, exp) {
     var slider = layer.property("Effects").addProperty("ADBE Slider Control");
     slider.name = name;
     slider.property("Slider").setValue(value);
     if (showName !== "") {
         slider.property("Slider").addToMotionGraphicsTemplateAs(comp, showName);
     }
+    if (exp !== "") {
+        slider.property("Slider").expression = exp;
+    }
 }
 
-function addAngleControl(layer, name, value) {
+function addAngleControl(layer, name, value, exp) {
     var eff = layer.property("Effects");
     var angleControl = eff.addProperty("ADBE Angle Control");
     angleControl.name = name;
     angleControl.property("Angle").setValue(value);
+    if (exp !== "") {
+        angleControl.property("Angle").expression = exp;
+    }
 
 }
 
@@ -121,21 +127,22 @@ function addNumToName(name, num) {
     return name + "_" + num;
 }
 
+function writeBaseProp(layer, property, expression) {
+    if (expression !== "") {
+        layer.property(property).expression = expression;
+    } 
+}
+
 function addTextField(comp, name, text, showName, 
     rotationExp, opacityExp, anchorExp, sourceExp, positionExp,
     visible) {
-    //rotationExp, switchExp, anchorExp, sourceExp,
     var aText = comp.layers.addText(text);
     aText.name = name;
-    if (rotationExp !== "") {
-        aText.property("Rotation").expression = positionExp;
-    }
-    if (anchorExp !== "") {
-        aText.property("Anchor Point").expression = anchorExp;
-    }
-    if (opacityExp !== "") {
-        aText.property("Opacity").expression = opacityExp;
-    }
+    writeBaseProp(aText, "Rotation", rotationExp);
+    writeBaseProp(aText, "Opacity", opacityExp);
+    writeBaseProp(aText, "Anchor Point", anchorExp);
+    writeBaseProp(aText, "Position", positionExp);
+
     if (sourceExp !== "") {
         var t = aText.property("Text").property("Source Text");
         t.expression = sourceExp;
@@ -160,7 +167,8 @@ function createShape(vertices, inTangents, outTangents, closed) {
     return myShape;
 }
 
-function addShapeToLayer(comp, name, shape, color, opacity, stroke, position, colorExp, rotationExp, center) {
+function addShapeToLayer(comp, name, shape, color, opacity, stroke, position, 
+            strokeColorExp, strokeWidthExp, fillColorExp, rotationExp, center, anchorCoord) {
 
     var layer = comp.layers.addShape();
     layer.name = name;
@@ -169,138 +177,323 @@ function addShapeToLayer(comp, name, shape, color, opacity, stroke, position, co
     var linePath = lineShape.property("Path");
     linePath.setValue(shape);
     
-    var lineStroke =  shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Stroke");
+    var lineStroke = shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Stroke");
     lineStroke.property("Color").setValue(color);
     lineStroke.property("Opacity").setValue(opacity);
     lineStroke.property("Stroke Width").setValue(stroke);
 
-    if (colorExp !== "") {
-        lineStroke.property("Color").expression = colorExp;
+    if (strokeColorExp !== "") {
+        lineStroke.property("Color").expression = strokeColorExp;
+    }
+
+    if (strokeWidthExp !== "") {
+        lineStroke.property("Stroke Width").expression = strokeWidthExp;
     }
 
     if (rotationExp !== "") {
         layer.transform.rotation.expression = rotationExp;
     }
 
+    var lineFill = shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Fill");
+    lineFill.property("Color").expression = fillColorExp;
+
     if (center === true) {
         centerAnchorPoint(layer);
     } else {
-        layer.anchorPoint.setValue([0, 0]);
+        layer.transform.anchorPoint.setValue(anchorCoord);
     }
 
     layer.transform.position.setValue(position);
     layer.moveToEnd();
 }
 
-function createSizeArrow(comp, num) {
+function addVisibilityExpression(comp, array, exp) {
+    for (var i = 0; i < array.length; i++) {
+        var layer = comp.layers.byName(array[i]);
+        layer.property("Opacity").expression = exp;
+    }
+}
+
+function addRectangle (comp, name, size, strokeColor, strokeOpacity, 
+                    strokeWidth, fillColor, fillOpacity, position) {
+    var rectangle = comp.layers.addShape();
+    rectangle.name = name;
+    var shapeGroup = rectangle.property("Contents").addProperty("ADBE Vector Group");
+    var rect = shapeGroup.property("Contents").addProperty("ADBE Vector Shape - Rect");
+    rect.property("Size").setValue(size);
+
+    var rectStroke = shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Stroke");
+    rectStroke.property("Color").setValue(strokeColor);
+    rectStroke.property("Opacity").setValue(strokeOpacity);
+    rectStroke.property("Stroke Width").setValue(strokeWidth);
+
+    var rectFill = shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Fill");
+    rectFill.property("Color").setValue(fillColor);
+    rectFill.property("Opacity").setValue(fillOpacity);
+    
+    rectangle.transform.position.setValue(position);
+} 
+
+function rectAddExpressions(comp, name, sizeExp, positionExp, roundnessExp, strokeExp, 
+            strokeColorExp, fillColorExp, fillColorOpacityExp, opacityExp) {
+    var layer = comp.layers.byName(name);
+    
+    if (opacityExp !== "") {
+        layer.property("Opacity").expression = opacityExp;
+    }
+    layer.property("Anchor Point").expression = "thisComp.layer(\"mainLabel\").transform.anchorPoint";
+    layer.property("Position").expression = "thisComp.layer(\"mainLabel\").transform.position";
+    layer.property("Rotation").expression = "thisComp.layer(\"mainLabel\").transform.rotation";
+    
+    var shapeGroup = layer.property("Contents").property("ADBE Vector Group");
+    
+    var rect = shapeGroup.property("Contents").property("ADBE Vector Shape - Rect");
+    rect.property("Size").expression = sizeExp;
+    rect.property("Position").expression = positionExp;
+    rect.property("Roundness").expression = roundnessExp;
+    
+    var rectStroke = shapeGroup.property("Contents").property("ADBE Vector Graphic - Stroke");
+    rectStroke.property("Color").expression = strokeColorExp;
+    rectStroke.property("Stroke Width").expression = strokeExp;
+
+    var rectFill = shapeGroup.property("Contents").property("ADBE Vector Graphic - Fill");
+    rectFill.property("Color").expression = fillColorExp;
+    rectFill.property("Opacity").expression = fillColorOpacityExp;
+}
+
+function createSizeArrow(baseCompName, comp, num) {
 
     const mainNull = addNumToName("mainNull", num);
     const lineTop = addNumToName("lineTop", num);
     const lineBottom = addNumToName("lineBottom", num);
     const lineExtTop = addNumToName("lineExtTop", num);
     const lineExtBottom = addNumToName("lineExtBottom", num);
+    const lineExtTailTop = addNumToName("lineExtTailTop", num);
+    const lineExtTailBottom = addNumToName("lineExtTailBottom", num);
     const lineCenter = addNumToName("lineCenter", num);
     const shelfPoint = addNumToName("shelfPoint", num);
     const shelfPointExt = addNumToName("shelfPointExt", num);
+    const outerTailTop = addNumToName("outerTailTop", num);
+    const outerTailBottom = addNumToName("outerTailBottom", num);
+    const textNull = addNumToName("textNull", num);
+    const topNull = addNumToName("topNull", num);
+    const shelfNull = addNumToName("shelfNull", num);
+    const bottomNull = addNumToName("bottomNull", num);
+
+    arrowWidth = 40;
+    arrowHeight = 50;
 
     expressions = {
         //mainNull
-        "radian": "const anchor1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" + 
+        radian: "const anchor1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" + 
                 "const anchor2 = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" + 
                 "const coord = [(anchor1[0] - anchor2[0]).toFixed(2) * -1, (anchor1[1] - anchor2[1]).toFixed(2)];\n" + 
                 "const rad = Math.atan2(coord[0], coord[1]);\n" + 
                 "effect(\"radian\")(\"Slider\").value = rad;",
 
-        "angle": "const rad = effect(\"radian\")(\"Slider\").value;\n" + 
+        angle: "const rad = effect(\"radian\")(\"Slider\");\n" + 
                 "const angle = (rad * (180 / Math.PI)).toFixed(2);\n" + 
-                "effect(\"Angle Control\")(\"angle\").value = angle;", 
+                "effect(\"angle\")(\"Angle\").value = angle;", 
         //nulls
-        "centerPoint": "var p1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" + 
+        centerPoint: "var p1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" + 
                 "var p2 = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" + 
                 "[(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]",
 
         //textExps
-        "textSource": "const ln = thisComp.layer(\"" + mainNull + "\").effect(\"numToLabel\")(\"Slider\")\n" +
+        textSource: "const ln = thisComp.layer(\"" + mainNull + "\").effect(\"numToLabel\")(\"Slider\")\n" +
                 "const lbl = (thisComp.layer(\"quantity\").text.sourceText.value * (ln / 100)).toFixed(thisComp.layer(\"" + mainNull + "\").effect(\"pointSigns\")(\"Slider\").value);\n" +
-                "text.sourceText.style.setText(`${lbl} ${thisComp.layer(\"points\").text.sourceText}`).setFontSize(thisComp.layer(\"" + mainNull + "\").effect(\"fontSize\")(\"Slider\"));",
+                "text.sourceText.style.setText(`${lbl} ${thisComp.layer(\"points\").text.sourceText}`)" + 
+                ".setFillColor(thisComp.layer(\"" + mainNull + "\").effect(\"fontColor\")(\"Color\"))" + 
+                ".setFontSize(thisComp.layer(\"" + mainNull + "\").effect(\"fontSize\")(\"Slider\"));",
 
-        "textAnchor1": "const s = thisComp.layer(\"mainLabel\");\n" +
-                "const w = s.sourceRectAtTime().width / 2;\n" +
-                "const h = s.sourceRectAtTime().height / 2;\n" +
-                "const l = s.sourceRectAtTime().left;\n" +
-                "const t = s.sourceRectAtTime().top;\n" +
-                "[l + w, t + h];",
-        "textAnchor2": "const s = thisComp.layer(\"mainLabel2\");\n" +
-                "const w = s.sourceRectAtTime().width / 2;\n" +
-                "const h = s.sourceRectAtTime().height / 2;\n" +
-                "const l = s.sourceRectAtTime().left;\n" +
-                "const t = s.sourceRectAtTime().top;\n" +
+        textAnchor: "const s = thisLayer.sourceRectAtTime();\n" +
+                "const w = s.width / 2;\n" +
+                "const h = s.height / 2;\n" +
+                "const l = s.left;\n" +
+                "const t = s.top;\n" +
                 "const a = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\").value;\n" +
                 "const b = thisComp.layer(\"" + mainNull + "\").effect(\"lineBias\")(\"Slider\").value;\n" +
-                "[l + w + 2 * b * Math.cos(a), t + h + b * Math.sin(a)];",
-        "textAnchor3": "const s = thisComp.layer(\"mainLabel3\");\n" +
-                "const w = s.sourceRectAtTime().width / 2;\n" +
-                "const h = s.sourceRectAtTime().height / 2;\n" +
-                "const l = s.sourceRectAtTime().left;\n" +
-                "const t = s.sourceRectAtTime().top;\n" +
-                "const b = thisComp.layer(\"" + mainNull + "\").effect(\"lineBias\")(\"Slider\").value;\n" +
-                "[l + w, t + h + b];",  
-
-        "textSwitch1": "const q = thisComp.layer(\"" + mainNull + "\").effect(\"Dropdown Menu Control\")(\"Menu\").value;\n" +
-                "if (q === 1) {\n" +
-                "    transform.opacity = 100;\n" +
-                "    } else {\n" +
-                "        transform.opacity = 0;\n" +
+                "var menuValue = thisComp.layer(\"" + mainNull + "\").effect(\"Dropdown Menu Control\")(\"Menu\").value;\n" +
+                "if (menuValue === 1) {\n" +
+                "    transform.anchorPoint = [l + w, t + h];\n" +
+                "} else if (menuValue === 2) {\n" +
+                "    transform.anchorPoint = [l + w, t + h];\n" +
+                "} else if (menuValue === 3) {\n" +
+                "    transform.anchorPoint = [l + w + 2 * b * Math.cos(a), t + h + b * Math.sin(a)];\n" +
+                "} else {\n" +
+                "    transform.anchorPoint = [l + w, t + h + b];\n" +
                 "}",
-        "textSwitch2": "const q = thisComp.layer(\"" + mainNull + "\").effect(\"Dropdown Menu Control\")(\"Menu\").value;\n" +
-                "if (q === 2) {\n" +
-                "    transform.opacity = 100;\n" +
-                "    } else {\n" +
-                "        transform.opacity = 0;\n" +
-                "    }",
-        "textSwitch3": "const q = thisComp.layer(\"" + mainNull + "\").effect(\"Dropdown Menu Control\")(\"Menu\").value;\n" +
-                "if (q === 3) {\n" +
-                "    transform.opacity = 100;\n" +
-                "    } else {\n" +
-                "        transform.opacity = 0;\n" +
+        textRotation: "var menuValue = thisComp.layer(\"" + mainNull + "\").effect(\"Dropdown Menu Control\")(\"Menu\").value;\n" +
+                "var turnModifier = thisComp.layer(\"" + mainNull + "\").effect(\"turnLabel\")(\"Checkbox\").value === 1 ? 180 : 0;\n" +
+                "if (menuValue === 4) {\n" +
+                "    transform.rotation = thisComp.layer(\"" + mainNull + "\").effect(\"angle\")(\"Angle\") + 90 + turnModifier;\n" +
+                "} else {\n" +
+                "    transform.rotation = 0;\n" +
                 "}",
-
-        "textRotation": "thisComp.layer(\"" + mainNull + "\").effect(\"Angle Control\")(\"Angle\") - 90;",
-        "textPosition": "thisComp.layer(\"center\").transform.position;",
+        textPosition: "var menuValue = thisComp.layer(\"" + mainNull + "\").effect(\"Dropdown Menu Control\")(\"Menu\").value;\n" +
+                "var textSize = thisLayer.sourceRectAtTime();\n" +
+                "var lrModifier = thisComp.layer(\"" + mainNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value === 1 ? 1 : -1;\n" +
+                "var centerBias = thisComp.layer(\"" + mainNull + "\").effect(\"fontSize\")(\"Slider\") / 4;\n" +
+                "var lineBias = thisComp.layer(\"" + mainNull + "\").effect(\"lineBias\")(\"Slider\").value;\n" +
+                "var shelf = thisComp.layer(\"" + shelfPoint + "\").transform.position;\n" +
+                "if (menuValue === 1) {\n" +
+                "    transform.position = [shelf[0] + (textSize.width / 2 + centerBias) * lrModifier, shelf[1] - lineBias];\n" +
+                "} else if (menuValue === 2) {\n" +
+                "    transform.position = comp(\"" + baseCompName + "\").layer(\"" + textNull + "\").transform.position\n" +
+                "} else if (menuValue === 3) {\n" +
+                "    var pos = thisComp.layer(\"" + lineCenter + "\").transform.position;\n" +
+                "    transform.position = [pos[0], \n" +
+                "                          pos[1]];\n" +
+                "} else {\n" +
+                "    transform.position = thisComp.layer(\"" + lineCenter + "\").transform.position;\n" +
+                "}",
+        
 
         //lines
-        "strokeColor": "thisComp.layer(\"" + mainNull + "\").effect(\"Line Width\")(\"Slider\")",
+        strokeColor: "thisComp.layer(\"" + mainNull + "\").effect(\"lineColor\")(\"Color\")",
 
+        strokeWidth: "thisComp.layer(\"" + mainNull + "\").effect(\"lineWidth\")(\"Slider\")",
+
+        extStrokeWidth: "thisComp.layer(\"" + mainNull + "\").effect(\"extLineStrokeWidth\")(\"Slider\")",
+
+        extLineTopNull: "var mainPoint = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
+                "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
+                "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLine\")(\"Slider\");\n" +
+                "[mainPoint[0] + extLineLen * Math.cos(angle), mainPoint[1] + extLineLen * Math.sin(angle)];",
+
+        extLineBottomNull: "var mainPoint = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
+                "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
+                "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLine\")(\"Slider\");\n" +
+                "[mainPoint[0] + extLineLen * Math.cos(angle), mainPoint[1] + extLineLen * Math.sin(angle)];",
+
+        extLineTailTopNull: "var mainPoint = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
+                "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
+                "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLineTail\")(\"Slider\");\n" +
+                "[mainPoint[0] - extLineLen * Math.cos(angle), mainPoint[1] - extLineLen * Math.sin(angle)];",
+
+        extLineTailBottomNull: "var mainPoint = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
+                "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
+                "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLineTail\")(\"Slider\");\n" +
+                "[mainPoint[0] - extLineLen * Math.cos(angle), mainPoint[1] - extLineLen * Math.sin(angle)];",
+
+        shelfPointNull: "shelfPoint = thisComp.layer(\"" + shelfPoint + "\").transform.position;\n" +
+                "textSize = thisComp.layer(\"mainLabel\").sourceRectAtTime();\n" +
+                "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\")) === 1 ? 1 : -1;\n" +
+                "[shelfPoint[0] + (textSize.width + thisComp.layer(\"" + mainNull + "\").effect(\"fontSize\")(\"Slider\") / 3) * modifier, shelfPoint[1]];",
+
+        extLinesVisibility: "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"extLinesSwitch\")(\"Checkbox\"));\n" +
+                "100 * modifier;",
+
+        shelfLinesVisibility: "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"shelfSwitch\")(\"Checkbox\"));\n" + 
+                "100 * modifier;",
+
+        outerLinesVisibility: "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"outerLinesSwitch\")(\"Checkbox\"));\n" + 
+                "100 * modifier;",
+
+        shelfLeftRigth: "var shelfPoint = thisComp.layer(\"" + shelfPoint + "\").transform.position;\n" +
+                "var textSize = thisComp.layer(\"mainLabel\").sourceRectAtTime();\n" +
+                "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\")) === 1 ? 1 : -1\n" +
+                "[shelfPoint[0] + (textSize.width + 40) * modifier , shelfPoint[1]]",
+
+        outerLineTopNull: "var mainPoint = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
+                "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
+                "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"outerLine\")(\"Slider\");\n" +
+                "[mainPoint[0] - extLineLen * Math.sin(angle), mainPoint[1] + extLineLen * Math.cos(angle)];", 
+        
+        outerLineBottomNull: "var mainPoint = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
+                "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
+                "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"outerLine\")(\"Slider\");\n" +
+                "[mainPoint[0] + extLineLen * Math.sin(angle), mainPoint[1] - extLineLen * Math.cos(angle)];", 
 
         //arrow
+        arrowTop: "thisComp.layer(\"" + lineTop + "\").transform.position",
+
+        arrowBottom: "thisComp.layer(\"" + lineBottom + "\").transform.position",
+
+        arrowTopAngle: "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"turnArrows\")(\"Checkbox\")) === 1 ? 0 : 180;\n" +
+                "thisComp.layer(\"" + mainNull + "\").effect(\"angle\")(\"Angle\") - 180 + modifier;",
+
+        arrowBottomAngle: "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"turnArrows\")(\"Checkbox\")) === 1 ? 0 : 180;\n" +
+                "thisComp.layer(\"" + mainNull + "\").effect(\"angle\")(\"Angle\") + modifier;",
+
+        arrowSize: "temp = thisComp.layer(\"" + mainNull + "\").effect(\"arrowSize\")(\"Slider\");\n" +
+                "[temp, temp]",
+
+        //rectangle
+        rectSize: "const w = thisComp.layer(\"mainLabel\").sourceRectAtTime().width;\n" +
+                "const h = thisComp.layer(\"mainLabel\").sourceRectAtTime().height;\n" +
+                "const m = thisComp.layer(\"" + mainNull + "\").effect(\"margins\")(\"Slider\");\n" +
+                "[w + m, h + m];",
+
+        rectPosition: "const s = thisComp.layer(\"mainLabel\").sourceRectAtTime();\n" +
+                "const w = s.width / 2;\n" +
+                "const h = s.height / 2;\n" +
+                "const l = s.left;\n" +
+                "const t = s.top;\n" +
+                "const b = thisComp.layer(\"" + mainNull + "\").effect(\"bias\")(\"Slider\");\n" +
+                "[l + w, t + h - b];",
+
+        rectRoudness: "thisComp.layer(\"" + mainNull + "\").effect(\"roundness\")(\"Slider\");",
+
+        rectStroke: "thisComp.layer(\"" + mainNull + "\").effect(\"strokeWidth\")(\"Slider\");",
+        
+        rectStrokeColor: "thisComp.layer(\"" + mainNull + "\").effect(\"labelStrokeColor\")(\"Color\");",
+
+        rectFillColor: "thisComp.layer(\"" + mainNull + "\").effect(\"labelFillColor\")(\"Color\");",
+
+        rectFillOpacity: "thisComp.layer(\"" + mainNull + "\").effect(\"labelFillOpacity\")(\"Slider\");",
+
+        rectOpacity: "thisComp.layer(\"" + mainNull + "\").effect(\"labelOpacity\")(\"Slider\");",
 
     };
 
-    nullNames = [mainNull, lineTop, lineBottom, lineCenter, 
-        lineExtTop, lineExtBottom, shelfPoint, shelfPointExt];
+    var nullNames = [mainNull, lineCenter, lineExtTop, lineExtBottom, lineExtTailTop, lineExtTailBottom, 
+        shelfPointExt, outerTailTop, outerTailBottom, lineTop, lineBottom, shelfPoint];
 
     for (var i = 0; i < nullNames.length; i++) {
         addNewNull(comp, nullNames[i], "[100, 100]", "");
     }
     
     comp.layers.byName(lineCenter).transform.position.expression = expressions.centerPoint;
+    comp.layers.byName(lineExtTop).transform.position.expression = expressions.extLineTopNull;
+    comp.layers.byName(lineExtBottom).transform.position.expression = expressions.extLineBottomNull;
+    comp.layers.byName(lineExtTailTop).transform.position.expression = expressions.extLineTailTopNull;
+    comp.layers.byName(lineExtTailBottom).transform.position.expression = expressions.extLineTailBottomNull;
+    comp.layers.byName(outerTailTop).transform.position.expression = expressions.outerLineTopNull;
+    comp.layers.byName(outerTailBottom).transform.position.expression = expressions.outerLineBottomNull;
+    comp.layers.byName(shelfPointExt).transform.position.expression = expressions.shelfPointNull;
 
     var mainNullLayer = comp.layers.byName(mainNull);
-
-    addAngleControl(mainNullLayer, "angle", 0);
     
-    addSlider(comp, mainNullLayer, "radian", 0, "");
-    addSlider(comp, mainNullLayer, "numToLabel", 100, "Слайдер для роста числа");
-    addSlider(comp, mainNullLayer, "bias", 8, "Отклонение рамки от центра");
-    addSlider(comp, mainNullLayer, "margins", 20, "Границы плашки");
-    addSlider(comp, mainNullLayer, "roundness", 20, "Углы плашки, закругление");
-    addSlider(comp, mainNullLayer, "strokeWidth", 3, "Границы плашки, толщина");
-    addSlider(comp, mainNullLayer, "lineBias", 50, "Отклонение плашки от линии");
-    addSlider(comp, mainNullLayer, "lineWidth", 5, "Толщина линии");
-    addSlider(comp, mainNullLayer, "pointSigns", 1, "Количество знаков после запятой");
-    addSlider(comp, mainNullLayer, "fontSize", 70, "Размер шрифта");
+    addSlider(comp, mainNullLayer, "radian", 0, "", expressions.radian);
+    addSlider(comp, mainNullLayer, "numToLabel", 100, "Слайдер для роста числа", "");
+    addSlider(comp, mainNullLayer, "bias", 0, "Отклонение рамки от центра плашки", "");
+    addSlider(comp, mainNullLayer, "margins", 50, "Границы плашки", "");
+    addSlider(comp, mainNullLayer, "roundness", 10, "Углы плашки, закругление", "");
+    addSlider(comp, mainNullLayer, "strokeWidth", 3, "Границы плашки, толщина", "");
+    addSlider(comp, mainNullLayer, "labelOpacity", 100, "Прозрачность плашки", "");
+    addSlider(comp, mainNullLayer, "labelFillOpacity", 100, "Прозрачность заливки плашки", "");
+    addSlider(comp, mainNullLayer, "lineBias", 50, "Отклонение плашки от линии", "");
+    addSlider(comp, mainNullLayer, "arrowSize", 100, "Размер стрелок", "");
+    addSlider(comp, mainNullLayer, "lineWidth", 5, "Толщина линий", "");
+    addSlider(comp, mainNullLayer, "extLineStrokeWidth", 3, "Толщина выносных линий", "");
+    addSlider(comp, mainNullLayer, "extLine", 300, "Длина выносной линии", "");
+    addSlider(comp, mainNullLayer, "extLineTail", 30, "Длина хвоста выносной линии", "");
+    addSlider(comp, mainNullLayer, "outerLine", 100, "Длина хвоста внешней стрелки", "");
+    addSlider(comp, mainNullLayer, "pointSigns", 1, "Количество знаков после запятой", "");
+    addSlider(comp, mainNullLayer, "fontSize", 75, "Размер шрифта", "");
 
-    addDropDownMenu(mainNullLayer, "labelType", ["Свободная", 
+    addAngleControl(mainNullLayer, "angle", 0, expressions.angle);
+
+    addCheckBox(comp, mainNullLayer, "leftRightSwitch", "Лево / право");
+    addCheckBox(comp, mainNullLayer, "shelfSwitch", "Полка");
+    addCheckBox(comp, mainNullLayer, "extLinesSwitch", "Выносные линии");
+    addCheckBox(comp, mainNullLayer, "outerLinesSwitch", "Внешние линии");
+    addCheckBox(comp, mainNullLayer, "turnArrows", "Развернуть стрелки");
+    addCheckBox(comp, mainNullLayer, "turnLabel", "Развернуть плашку на 180");
+
+    addDropDownMenu(mainNullLayer, "labelType", ["Текст на полке",
+            "Свободная", 
             "Привязанная без поворота", 
             "Привязанная с поворотом"]);
     mainNullLayer.property("Effects")
@@ -313,66 +506,77 @@ function createSizeArrow(comp, num) {
     addColorControl(comp, mainNullLayer, "labelStrokeColor", [0.9, 0.9, 0.9], "Цвет обводки плашки");
     addColorControl(comp, mainNullLayer, "lineColor", [0.9, 0.9, 0.9], "Цвет линий");
 
-    addTextField(comp, "points", "см", "Единицы измерения", "", "", "", "", false);
-    addTextField(comp, "quantity", 135, "Количество", "", "", "", "", false);
-    addTextField(comp, "mainLabel", "mainLabel", "", "", expressions.textSwitch1, expressions.textAnchor1, 
-                                    expressions.textSource, "", true);
-    addTextField(comp, "mainLabel2", "mainLabel", "", "", expressions.textSwitch2, expressions.textAnchor2, 
-                                    expressions.textSource, expressions.textPosition, true);
-    addTextField(comp, "mainLabel3", "mainLabel", "", expressions.textRotation, expressions.textSwitch3, expressions.textAnchor3, 
-                                    expressions.textSource, expressions.textPosition, true);
+    addRectangle(comp, "labeBox", [100, 60], [0.9, 0.9 ,0.9], 100, 5, [0.8, 0.8, 0.8], 100, [100, 100]);
+    rectAddExpressions(comp, "labeBox", expressions.rectSize, expressions.rectPosition, expressions.rectRoudness, 
+                            expressions.rectStroke, expressions.rectStrokeColor, expressions.rectFillColor, 
+                            expressions.rectFillOpacity, expressions.rectOpacity);
+
+    addTextField(comp, "points", "см", "Единицы измерения", "", "", "", "", "", false);
+    addTextField(comp, "quantity", 135, "Количество", "", "", "", "", "", false);
+
+    addTextField(comp, "mainLabel", "", "Главная плашка", 
+            expressions.textRotation, "", expressions.textAnchor, expressions.textSource, expressions.textPosition, true);
 
     var line = createShape([[100, 100], [300, 300]], [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);
     
-    var lines = ["lineSize", "lineExtTop", "lineExtBottom", "lineShelf", "lineExtShelf"];
+    var lines = ["lineSize", "lineShelf", "lineShelfExt", "outerLineTop", "outerLineBottom"];
+
+    var extLines = ["lineExtTop", "lineExtBottom", "lineExtTailTop", "lineExtTailBottom"];
 
     for (i = 0; i < lines.length; i++) {
-        addShapeToLayer(comp, lines[i], line, [0.9,0.9,0.9], 100, 5, [0, 0], expressions.strokeColor, "", false);
+        addShapeToLayer(comp, lines[i], line, [0.9,0.9,0.9], 100, 5, [0, 0], 
+                        expressions.strokeColor, expressions.strokeWidth, "", "", false, [0, 0]);
+    }
 
+    for (i = 0; i < extLines.length; i++) {
+        addShapeToLayer(comp, extLines[i], line, [0.9,0.9,0.9], 100, 5, [0, 0], 
+                        expressions.strokeColor, expressions.extStrokeWidth, "", "", false, [0, 0]);
     }
     
     setPathExp(comp, "lineSize", lineTop, lineBottom);
     setPathExp(comp, "lineExtTop", lineTop, lineExtTop);
     setPathExp(comp, "lineExtBottom", lineBottom, lineExtBottom);
+    setPathExp(comp, "lineExtTailTop", lineTop, lineExtTailTop);
+    setPathExp(comp, "lineExtTailBottom", lineBottom, lineExtTailBottom);
     setPathExp(comp, "lineShelf", lineCenter, shelfPoint);
-    setPathExp(comp, "lineExtShelf", shelfPoint, shelfPointExt);
+    setPathExp(comp, "lineShelfExt", shelfPoint, shelfPointExt);
+    setPathExp(comp, "outerLineTop", lineTop, outerTailTop);
+    setPathExp(comp, "outerLineBottom", lineBottom, outerTailBottom);
 
+    var extLines = ["lineExtTop", "lineExtBottom", "lineExtTailTop", "lineExtTailBottom"];
+    var shelfLines = ["lineShelf", "lineShelfExt"];
+    var outerLines = ["outerLineTop", "outerLineBottom"];
 
-    var arrow = createShape([[0, 50], [20, 0], [40, 50], [20, 40]], 
+    addVisibilityExpression(comp, extLines, expressions.extLinesVisibility);
+    addVisibilityExpression(comp, shelfLines, expressions.shelfLinesVisibility);
+    addVisibilityExpression(comp, outerLines, expressions.outerLinesVisibility);
+
+    var arrow = createShape([[0, arrowHeight], [arrowWidth / 2, 0], [arrowWidth, arrowHeight], [arrowWidth / 2, arrowWidth]], 
                             [[0, 0], [0, 0], [0, 0], [0, 0]], 
                             [[0, 0], [0, 0], [0, 0], [0, 0]], true);
 
-    addShapeToLayer(comp, "arrow1", arrow, [0.9,0.9,0.9], 100, 3, [0, 0], expressions.strokeColor, )
+    addShapeToLayer(comp, "arrowTop", arrow, [0.9,0.9,0.9], 100, 3, [0, 0], expressions.strokeColor, expressions.strokeWidth, expressions.rectFillColor, "", false, [arrowWidth / 2, 0]);
+    addShapeToLayer(comp, "arrowBottom", arrow, [0.9,0.9,0.9] , 100, 3, [0, 0], expressions.strokeColor, expressions.strokeWidth, expressions.rectFillColor, "", false, [arrowWidth / 2, 0]);
 
+    var arrowTop = comp.layers.byName("arrowTop");
+    var arrowBottom = comp.layers.byName("arrowBottom");
     
+    arrowTop.property("Position").expression = expressions.arrowTop;
+    arrowTop.property("Scale").expression = expressions.arrowSize;
+    arrowTop.property("Rotation").expression = expressions.arrowTopAngle;
+    arrowBottom.property("Position").expression = expressions.arrowBottom;
+    arrowBottom.property("Scale").expression = expressions.arrowSize;
+    arrowBottom.property("Rotation").expression = expressions.arrowBottomAngle;
 
+    var figures = lines.concat(["arrowTop", "arrowBottom"]);
     
+    for (var i = 0; i < figures.length; i++) {
+        comp.layers.byName(figures[i]).locked = true;
+    }
 
-
-
-    /*
-    Размерная линия 
-        стрелки внутри/снаружи
-
-        вынос размерного числа
-            - то же, что и в коллауте?
-            - 
-
-        выносная линия
-            - всегда перпендикулярна размерной?
-
-        обозначение дуги/угла
-
-    */
-
-    /*
-    центр
-    стрелки от центра, анкор на острие? 
-    вынос как продолжение размерной линии
-
-    */
-    
-
+    comp.layers.byName(lineTop).property("Position").expression = "comp(\"" + baseCompName + "\").layer(\"" + topNull +"\").transform.position";
+    comp.layers.byName(lineBottom).property("Position").expression = "comp(\"" + baseCompName + "\").layer(\"" + bottomNull +"\").transform.position";
+    comp.layers.byName(shelfPoint).property("Position").expression = "comp(\"" + baseCompName + "\").layer(\"" + shelfNull +"\").transform.position";
 }
 
 function main() {
@@ -386,14 +590,14 @@ function main() {
         var newSizeArrow = app.project.items.addComp(name, 3840, 2160, 1, 60, 50);
     
         baseComp.layers.add(newSizeArrow);
-        //newCallout.openInViewer();
-        log("Composition " + name + " created");
-        createSizeArrow(newSizeArrow, num);
+        var bName = baseComp.name;
+        log("Comp " + name + " created");
+        createSizeArrow(bName, newSizeArrow, num);
         baseComp.layers.byName(name).moveToBeginning();
-        //baseComp.layers.byName(name).locked = true;
+        baseComp.layers.byName(name).locked = true;
 
-        var nullNames = ["topNull", "bottomNull", "topArrowNull", "bottomArrowNull"];
-        var nullPos = [[100, 100], [100, 600], [600, 100], [600, 600]];
+        var nullNames = ["topNull", "shelfNull", "bottomNull", "textNull"];
+        var nullPos = [[300, 600], [900, 600], [700, 800], [400, 400]];
 
         for (i = 0; i < nullNames.length; i++) {
             var nullName = addNumToName(nullNames[i], num);
@@ -401,32 +605,9 @@ function main() {
             newNull.transform.position.setValue(nullPos[i])
         }
 
-
-        // var mainArrow = baseComp.layers.addNull();
-        // mainArrow.name = "mainArrow" + num;
-        // mainArrow.property("Scale").expression = "[100, 100]";
-        // var mainCenter = baseComp.layers.addNull();
-        // mainCenter.name = "mainCenter" + num;
-        // mainCenter.property("Scale").expression = "[100, 100]";
-
-        // var slaveCenter = newCallout.layers.byName("centerPoint_" + num);
-        // var slaveArrow = newCallout.layers.byName("arrowPoint_" + num);
-
-        // slaveCenter.moveToBeginning();
-        // slaveArrow.moveToBeginning();
-        
-        // slaveArrow.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainArrow.name + "\").transform.position[0];\n" + 
-        // "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainArrow.name + "\").transform.position[1];\n" + 
-        // "[x, y]";
-
-        // slaveCenter.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[0];\n" + 
-        // "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[1];\n" + 
-        // "[x, y]";
     } else {
         alert("Надо сначала выбрать нужную композицию, потом запускать скрипт!");
     }
-
-
 }
 
 main();
