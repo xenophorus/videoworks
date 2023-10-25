@@ -5,9 +5,9 @@
         } catch (e) {
             log(theProp.name + " " + "NO VALUE");
         }
-        //if (theProp.name === "Skew Axis") {
-        //    log(1);
-        //}
+        if (theProp.name === "Scale") {
+            log(1);
+        }
     } else {
         for (var i = 1; i <= theProp.numProperties; i++) {
             processProperty(theProp.property(i));
@@ -261,6 +261,51 @@ function rectAddExpressions(comp, name, sizeExp, positionExp, roundnessExp, stro
     rectFill.property("Opacity").expression = fillColorOpacityExp;
 }
 
+function addTrimKeys(comp, layerName, effect, keys, values, isNewEff) {
+    var vGroup = comp.layers.byName(layerName)
+            .property("ADBE Root Vectors Group")
+            .property("ADBE Vector Group")
+
+    var trim;
+    if (isNewEff) {
+        trim = vGroup.property("ADBE Vectors Group").addProperty("ADBE Vector Filter - Trim");
+    } else {
+        trim = vGroup.property("ADBE Vectors Group").property("ADBE Vector Filter - Trim");
+    }
+    var trimEff = trim.property("ADBE Vector Trim " + effect);
+    trimEff.addKey(keys[0]);
+    trimEff.addKey(keys[1]);
+    trimEff.setValueAtKey(1, values[0]);
+    trimEff.setValueAtKey(2, values[1]);
+}
+
+function addDeepKeys(comp, layerName, effect, keys, values) {
+    var count = keys.length;
+    var layer = comp.layers.byName(layerName)
+            .property("ADBE Root Vectors Group")
+            .property("ADBE Vector Group")
+            .property("ADBE Vector Transform Group");
+    processProperty(layer)
+    
+    var prop = layer
+            .property("ADBE Vector " + effect);
+
+    for (var i = 1; i <= count; i++) {
+        prop.addKey(keys[i - 1]);
+        prop.setValueAtKey(i, values[i - 1]);   
+    }
+}
+
+function addKeys(comp, layerName, effect, keys, values) {
+    var count = keys.length;
+    var layer = comp.layers.byName(layerName).property(effect);
+
+    for (var i = 1; i <= count; i++) {
+        layer.addKey(keys[i - 1]);
+        layer.setValueAtKey(i, values[i - 1]);   
+    }
+}
+
 function createSizeArrow(baseCompName, comp, num) {
 
     const mainNull = addNumToName("mainNull", num);
@@ -279,12 +324,13 @@ function createSizeArrow(baseCompName, comp, num) {
     const topNull = addNumToName("topNull", num);
     const shelfNull = addNumToName("shelfNull", num);
     const bottomNull = addNumToName("bottomNull", num);
+    const animationStart = 0.0;
+    const animationEnd = 1.0;
 
     arrowWidth = 40;
     arrowHeight = 50;
 
     expressions = {
-        //mainNull
         radian: "const anchor1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" + 
                 "const anchor2 = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" + 
                 "const coord = [(anchor1[0] - anchor2[0]).toFixed(2) * -1, (anchor1[1] - anchor2[1]).toFixed(2)];\n" + 
@@ -294,12 +340,11 @@ function createSizeArrow(baseCompName, comp, num) {
         angle: "const rad = effect(\"radian\")(\"Slider\");\n" + 
                 "const angle = (rad * (180 / Math.PI)).toFixed(2);\n" + 
                 "effect(\"angle\")(\"Angle\").value = angle;", 
-        //nulls
+
         centerPoint: "var p1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" + 
                 "var p2 = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" + 
                 "[(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]",
 
-        //textExps
         textSource: "const ln = thisComp.layer(\"" + mainNull + "\").effect(\"numToLabel\")(\"Slider\")\n" +
                 "const lbl = (thisComp.layer(\"quantity\").text.sourceText.value * (ln / 100)).toFixed(thisComp.layer(\"" + mainNull + "\").effect(\"pointSigns\")(\"Slider\").value);\n" +
                 "text.sourceText.style.setText(`${lbl} ${thisComp.layer(\"points\").text.sourceText}`)" + 
@@ -323,6 +368,7 @@ function createSizeArrow(baseCompName, comp, num) {
                 "} else {\n" +
                 "    transform.anchorPoint = [l + w, t + h + b];\n" +
                 "}",
+
         textRotation: "var menuValue = thisComp.layer(\"" + mainNull + "\").effect(\"Dropdown Menu Control\")(\"Menu\").value;\n" +
                 "var turnModifier = thisComp.layer(\"" + mainNull + "\").effect(\"turnLabel\")(\"Checkbox\").value === 1 ? 180 : 0;\n" +
                 "if (menuValue === 4) {\n" +
@@ -330,6 +376,7 @@ function createSizeArrow(baseCompName, comp, num) {
                 "} else {\n" +
                 "    transform.rotation = 0;\n" +
                 "}",
+
         textPosition: "var menuValue = thisComp.layer(\"" + mainNull + "\").effect(\"Dropdown Menu Control\")(\"Menu\").value;\n" +
                 "var textSize = thisLayer.sourceRectAtTime();\n" +
                 "var lrModifier = thisComp.layer(\"" + mainNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value === 1 ? 1 : -1;\n" +
@@ -347,9 +394,7 @@ function createSizeArrow(baseCompName, comp, num) {
                 "} else {\n" +
                 "    transform.position = thisComp.layer(\"" + lineCenter + "\").transform.position;\n" +
                 "}",
-        
 
-        //lines
         strokeColor: "thisComp.layer(\"" + mainNull + "\").effect(\"lineColor\")(\"Color\")",
 
         strokeWidth: "thisComp.layer(\"" + mainNull + "\").effect(\"lineWidth\")(\"Slider\")",
@@ -405,10 +450,9 @@ function createSizeArrow(baseCompName, comp, num) {
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"outerLine\")(\"Slider\");\n" +
                 "[mainPoint[0] + extLineLen * Math.sin(angle), mainPoint[1] - extLineLen * Math.cos(angle)];", 
 
-        //arrow
-        arrowTop: "thisComp.layer(\"" + lineTop + "\").transform.position",
+        arrowTop: "thisComp.layer(\"" + lineTop + "\").transform.position;",
 
-        arrowBottom: "thisComp.layer(\"" + lineBottom + "\").transform.position",
+        arrowBottom: "thisComp.layer(\"" + lineBottom + "\").transform.position;",
 
         arrowTopAngle: "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"turnArrows\")(\"Checkbox\")) === 1 ? 0 : 180;\n" +
                 "thisComp.layer(\"" + mainNull + "\").effect(\"angle\")(\"Angle\") - 180 + modifier;",
@@ -419,7 +463,6 @@ function createSizeArrow(baseCompName, comp, num) {
         arrowSize: "temp = thisComp.layer(\"" + mainNull + "\").effect(\"arrowSize\")(\"Slider\");\n" +
                 "[temp, temp]",
 
-        //rectangle
         rectSize: "const w = thisComp.layer(\"mainLabel\").sourceRectAtTime().width;\n" +
                 "const h = thisComp.layer(\"mainLabel\").sourceRectAtTime().height;\n" +
                 "const m = thisComp.layer(\"" + mainNull + "\").effect(\"margins\")(\"Slider\");\n" +
@@ -444,7 +487,6 @@ function createSizeArrow(baseCompName, comp, num) {
         rectFillOpacity: "thisComp.layer(\"" + mainNull + "\").effect(\"labelFillOpacity\")(\"Slider\");",
 
         rectOpacity: "thisComp.layer(\"" + mainNull + "\").effect(\"labelOpacity\")(\"Slider\");",
-
     };
 
     var nullNames = [mainNull, lineCenter, lineExtTop, lineExtBottom, lineExtTailTop, lineExtTailBottom, 
@@ -506,8 +548,8 @@ function createSizeArrow(baseCompName, comp, num) {
     addColorControl(comp, mainNullLayer, "labelStrokeColor", [0.9, 0.9, 0.9], "Цвет обводки плашки");
     addColorControl(comp, mainNullLayer, "lineColor", [0.9, 0.9, 0.9], "Цвет линий");
 
-    addRectangle(comp, "labeBox", [100, 60], [0.9, 0.9 ,0.9], 100, 5, [0.8, 0.8, 0.8], 100, [100, 100]);
-    rectAddExpressions(comp, "labeBox", expressions.rectSize, expressions.rectPosition, expressions.rectRoudness, 
+    addRectangle(comp, "labelBox", [100, 60], [0.9, 0.9 ,0.9], 100, 5, [0.8, 0.8, 0.8], 100, [100, 100]);
+    rectAddExpressions(comp, "labelBox", expressions.rectSize, expressions.rectPosition, expressions.rectRoudness, 
                             expressions.rectStroke, expressions.rectStrokeColor, expressions.rectFillColor, 
                             expressions.rectFillOpacity, expressions.rectOpacity);
 
@@ -520,8 +562,10 @@ function createSizeArrow(baseCompName, comp, num) {
     var line = createShape([[100, 100], [300, 300]], [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);
     
     var lines = ["lineSize", "lineShelf", "lineShelfExt", "outerLineTop", "outerLineBottom"];
-
     var extLines = ["lineExtTop", "lineExtBottom", "lineExtTailTop", "lineExtTailBottom"];
+    var shelfLines = ["lineShelf", "lineShelfExt"];
+    var outerLines = ["outerLineTop", "outerLineBottom"];
+
 
     for (i = 0; i < lines.length; i++) {
         addShapeToLayer(comp, lines[i], line, [0.9,0.9,0.9], 100, 5, [0, 0], 
@@ -542,10 +586,6 @@ function createSizeArrow(baseCompName, comp, num) {
     setPathExp(comp, "lineShelfExt", shelfPoint, shelfPointExt);
     setPathExp(comp, "outerLineTop", lineTop, outerTailTop);
     setPathExp(comp, "outerLineBottom", lineBottom, outerTailBottom);
-
-    var extLines = ["lineExtTop", "lineExtBottom", "lineExtTailTop", "lineExtTailBottom"];
-    var shelfLines = ["lineShelf", "lineShelfExt"];
-    var outerLines = ["outerLineTop", "outerLineBottom"];
 
     addVisibilityExpression(comp, extLines, expressions.extLinesVisibility);
     addVisibilityExpression(comp, shelfLines, expressions.shelfLinesVisibility);
@@ -568,15 +608,36 @@ function createSizeArrow(baseCompName, comp, num) {
     arrowBottom.property("Scale").expression = expressions.arrowSize;
     arrowBottom.property("Rotation").expression = expressions.arrowBottomAngle;
 
-    var figures = lines.concat(["arrowTop", "arrowBottom"]);
+    var figureToLock = lines.concat(["arrowTop", "arrowBottom"]).concat(extLines);
     
-    for (var i = 0; i < figures.length; i++) {
-        comp.layers.byName(figures[i]).locked = true;
+    for (var i = 0; i < figureToLock.length; i++) {
+        comp.layers.byName(figureToLock[i]).locked = true;
     }
 
     comp.layers.byName(lineTop).property("Position").expression = "comp(\"" + baseCompName + "\").layer(\"" + topNull +"\").transform.position";
     comp.layers.byName(lineBottom).property("Position").expression = "comp(\"" + baseCompName + "\").layer(\"" + bottomNull +"\").transform.position";
     comp.layers.byName(shelfPoint).property("Position").expression = "comp(\"" + baseCompName + "\").layer(\"" + shelfNull +"\").transform.position";
+
+    var lines = ["lineSize", "lineShelf", "lineShelfExt", "outerLineTop", "outerLineBottom", 
+                 "lineExtTop", "lineExtBottom", "lineExtTailTop", "lineExtTailBottom"];
+    
+    addTrimKeys(comp, "lineSize", "Start", [animationStart, animationEnd * 0.45], [50, 0], true);
+    addTrimKeys(comp, "lineSize", "End", [animationStart, animationEnd * 0.45], [50, 100], false);
+    addTrimKeys(comp, "lineShelf", "End", [animationStart, animationEnd * 0.3], [0, 100], true);
+    addTrimKeys(comp, "lineShelfExt", "End", [animationEnd * 0.3, animationEnd * 0.5], [0, 100], true);
+    addTrimKeys(comp, "outerLineTop", "End", [animationEnd * 0.4, animationEnd * 0.6], [0, 100], true);
+    addTrimKeys(comp, "outerLineBottom", "End", [animationEnd * 0.4, animationEnd * 0.6], [0, 100], true);
+    addTrimKeys(comp, "lineExtTop", "End", [animationEnd * 0.4, animationEnd * 0.6], [0, 100], true);
+    addTrimKeys(comp, "lineExtBottom", "End", [animationEnd * 0.4, animationEnd * 0.6], [0, 100], true);
+    addTrimKeys(comp, "lineExtTailTop", "End", [animationEnd * 0.4, animationEnd * 0.6], [0, 100], true);
+    addTrimKeys(comp, "lineExtTailBottom", "End", [animationEnd * 0.4, animationEnd * 0.6], [0, 100], true);
+
+    addDeepKeys(comp, "arrowTop", "Scale", [animationEnd * 0.4, animationEnd * 0.5, animationEnd * 0.52], [[0, 0], [120, 120], [100, 100]]);
+    addDeepKeys(comp, "arrowBottom", "Scale", [animationEnd * 0.4, animationEnd * 0.5, animationEnd * 0.52], [[0, 0], [120, 120], [100, 100]]);
+
+    addDeepKeys(comp, "labelBox", "Scale", [animationEnd * 0.4, animationEnd * 0.52], [[0, 0], [100, 100]]);
+
+    addKeys(comp, "mainLabel", "Scale", [animationEnd * 0.4, animationEnd * 0.52], [[0, 0], [100, 100]]);
 }
 
 function main() {
