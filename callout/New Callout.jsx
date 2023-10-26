@@ -418,10 +418,7 @@ function createCallout(comp, num) {
     var animationLayers = [
         comp.layers.byName("outerCircle"),
         comp.layers.byName("innerCircle"),
-        //comp.layers.byName("textField"),
     ];
-
-    //processProperty(comp.layers.byName("angle"));
 
     for (var i = 0; i < animationLayers.length; i++) {
         var aLayer = animationLayers[i].property("Scale");
@@ -437,10 +434,6 @@ function createCallout(comp, num) {
  
 function log(input) {
     $.writeln(input);
-    // var logFile = File("e:/logfile.txt");
-    // logFile.open("a");
-    // logFile.writeln(input);
-    // logFile.close();
 }
 
 function main () {
@@ -448,13 +441,13 @@ function main () {
     
     var baseComp = app.project.activeItem;
 
+    app.beginUndoGroup("New callout");
     if (baseComp instanceof CompItem) {
         var dig = generateRandomNumber().toString().split(".")[1].slice(0, 6);
         var name = "callout_" + dig;
         var newCallout = app.project.items.addComp(name, 3840, 2160, 1, 60, 50);
 
         baseComp.layers.add(newCallout);
-        //newCallout.openInViewer();
         log("Composition " + name + " created");
         createCallout(newCallout, dig);
         baseComp.layers.byName(name).moveToBeginning();
@@ -483,17 +476,7 @@ function main () {
     } else {
         alert("Надо сначала выбрать нужную композицию, потом запускать скрипт!");
     }
-
-
-    var items = app.project.items;
-
-    //search for calloutSeq in callout project
-    var myComp;
-    for (i = 1; i<=app.project.numItems; i++) {
-        if (app.project.item(i).name === "calloutSeq") {
-            myComp = app.project.item(i);
-        }
-    }
+    app.endUndoGroup();
 }
 
 main();

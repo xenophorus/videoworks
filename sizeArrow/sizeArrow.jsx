@@ -642,7 +642,7 @@ function createSizeArrow(baseCompName, comp, num) {
 
 function main() {
     log("Starting at " + new Date().toTimeString() + "================================================");
-    
+    app.beginUndoGroup("sizeArrow");
     var baseComp = app.project.activeItem;
 
     if (baseComp instanceof CompItem) {
@@ -669,6 +669,7 @@ function main() {
     } else {
         alert("Надо сначала выбрать нужную композицию, потом запускать скрипт!");
     }
+    app.endUndoGroup();
 }
 
 main();
