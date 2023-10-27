@@ -33,7 +33,6 @@ function addNewNull(comp, name, scaleExp, positionExp) {
         nullLayer.property("Position").expression = positionExp;
     }
     return nullLayer;
-
 }
 
 function setPathExp(comp, layerName, begin, end) {
