@@ -17,10 +17,10 @@
 
 function log(input) {
     $.writeln(input);
-    var logFile = File("e:/logfile.txt");
-    logFile.open("a");
-    logFile.writeln(input);
-    logFile.close();
+    // var logFile = File("e:/logfile.txt");
+    // logFile.open("a");
+    // logFile.writeln(input);
+    // logFile.close();
 }
 
 function createNull(targetComp){
@@ -265,14 +265,11 @@ function main() {
         opacity.setValueAtKey(3, 100);
 
         opacity.expression = expressions.lineOpacity;
-
-
         
     } else {
         alert("Надо сначала выбрать нужную композицию, потом запускать скрипт!");
     }
     app.endUndoGroup();
-
 }
 
 main();
