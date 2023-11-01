@@ -17,10 +17,10 @@
 
 function log(input) {
     $.writeln(input);
-    // var logFile = File("e:/logfile.txt");
-    // logFile.open("a");
-    // logFile.writeln(input);
-    // logFile.close();
+    var logFile = File("e:/logfile.txt");
+    logFile.open("a");
+    logFile.writeln(input);
+    logFile.close();
 }
 
 function createNull(targetComp){
