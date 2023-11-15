@@ -241,10 +241,10 @@ function createCallout(comp, num) {
             "const y = thisComp.layer(\"" + centerPoint + "\").transform.position[1];\n" +
             "[x, y];"
     aText.transform.anchorPoint.expression = expressions.textPosition;
-    aText.property("ADBE Text Properties").property("ADBE Text Document")
-            .addToMotionGraphicsTemplateAs(comp, "Текст коллаута");
-    aText.property("ADBE Text Properties").property("ADBE Text Document")
-            .expression = "text.sourceText.style.setFillColor(thisComp.layer(\"" + baseNull + "\").effect(\"textColor\")(\"Color\"))"
+    // aText.property("ADBE Text Properties").property("ADBE Text Document")
+    //         .addToMotionGraphicsTemplateAs(comp, "Текст коллаута");
+    // aText.property("ADBE Text Properties").property("ADBE Text Document")
+    //         .expression = "text.sourceText.style.setFillColor(thisComp.layer(\"" + baseNull + "\").effect(\"textColor\")(\"Color\"))"
 
     var textOpacity = aText.property("Opacity");
     var textScale = aText.property("Scale");
@@ -277,7 +277,7 @@ function createCallout(comp, num) {
     addCheckBox(comp, nullProps, "outerCircleSwitch", "Включить внешний круг");
     addCheckBox(comp, nullProps, "secondLineSwitch", "Включить вторую линию");
 
-    addColorControl(comp, nullProps, "textColor", [0.9, 0.9, 0.95], "Цвет текста");
+    // addColorControl(comp, nullProps, "textColor", [0.9, 0.9, 0.95], "Цвет текста");
     addColorControl(comp, nullProps, "lineColor", [0.6, 0.6, 0.65], "Цвет линий");
     addColorControl(comp, nullProps, "arrowColor", [0.2, 0.2, 0.22], "Цвет указателя");
 
