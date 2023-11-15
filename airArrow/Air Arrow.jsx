@@ -23,6 +23,7 @@ function log(input) {
     logFile.close();
 }
 
+
 function createNull(targetComp){
     /*
     function from Adobe's script "Create Nulls From Paths.jsx"
