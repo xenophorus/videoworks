@@ -9,7 +9,7 @@ table todo:
     5. import style, json or xml
     6. basic style setup in start dialog
     7. export style?
-    8. 
+    8. Вертикальный и горизонтальный зазоры
     
 
 
@@ -22,7 +22,7 @@ function processProperty(theProp) {
         } catch (e) {
             log(theProp.name + " " + "NO VALUE");
         }
-        if (theProp.name === "Path") {
+        if (theProp.name === "№ 1 2") {
             log(1);
         }
     } else {
@@ -40,13 +40,184 @@ function log(input) {
     logFile.close();
 }
 
-function createTable(columns, rows, csv, compID, isHorizHeader, isVertHeader) {
-    const mainNull = "mainNull";
+function addRectangle (comp, name, size, strokeColor, strokeOpacity, 
+                    strokeWidth, fillColor, fillOpacity) {
+    var rectangle = comp.layers.addShape();
+    rectangle.name = name;
+    var shapeGroup = rectangle.property("Contents").addProperty("ADBE Vector Group");
+    var rect = shapeGroup.property("Contents").addProperty("ADBE Vector Shape - Rect");
+    rect.property("Size").setValue(size);
+
+    var cellCoordinates = rectangle.property("Effects").addProperty("ADBE Point Control");
+    var cellCoordinatesPoint = cellCoordinates.property("Point");
+    cellCoordinatesPoint.expression = "thisLayer.name.split(\"-\").map(x => parseInt(x));";
+    
+    cellCoordinates.name = "cellCoordinates";
+    
+    var cellSize = rectangle.property("Effects").addProperty("ADBE Point Control");
+    cellSize.property("Point").setValue([1.0, 1.0]);
+    cellSize.name = "cellSize";
+
+    var rectStroke = shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Stroke");
+    rectStroke.property("Color").setValue(strokeColor);
+    rectStroke.property("Opacity").setValue(strokeOpacity);
+    rectStroke.property("Stroke Width").setValue(strokeWidth);
+
+    var rectFill = shapeGroup.property("Contents").addProperty("ADBE Vector Graphic - Fill");
+    rectFill.property("Color").setValue(fillColor);
+    rectFill.property("Opacity").setValue(fillOpacity);
+} 
+
+function csvData(data, separator) {
+    const EOL = "\n";
+    var dataArray = new Array();
+    var fieldCounter = 0;
+    var isOpen = false; //открыты ли кавычки
+
+    if (data.length === 0) {
+        return new Array(0, 0)
+    }
+    
+    for (var i = 0; i < data.length; i++) {
+        aChar = data[i];
+        if (aChar === "\"") {
+            isOpen = !isOpen;
+        }
+
+        if (!isOpen) {
+            if (aChar === separator) {
+                fieldCounter++;
+            }
+            if (aChar === EOL) {
+                fieldCounter++;
+                dataArray.push(fieldCounter);
+                fieldCounter = 0;
+            }
+        }
+    }
+    var firstElement = dataArray[0]
+    for (var i = 0; i > dataArray.length; i++) {
+        if (dataArray[i] !== firstElement) {
+            throw new Error("Некорректный файл!");
+        }
+    }
+    return new Array(dataArray.length, firstElement);
+}
+
+function rectAddExpressions(comp, name, sizeExp, positionExp, scaleExp, anchorExp) { 
+            //strokeColorExp, fillColorExp, fillColorOpacityExp, opacityExp) {
+    var layer = comp.layers.byName(name);
+    
+    // if (opacityExp !== "") {
+    //     layer.property("Opacity").expression = opacityExp;
+    // }
+
+    if (name !== "1-1") {
+        layer.property("Position").expression = positionExp;
+    }
+
+    layer.property("Anchor Point").expression = anchorExp;
+    layer.property("Scale").expression = scaleExp;
+    
+    var shapeGroup = layer.property("Contents").property("ADBE Vector Group");
+    
+    var rect = shapeGroup.property("Contents").property("ADBE Vector Shape - Rect");
+    rect.property("Size").expression = sizeExp;
+    // rect.property("Position").expression = positionExp;
+    // rect.property("Roundness").expression = roundnessExp;
+    
+    // var rectStroke = shapeGroup.property("Contents").property("ADBE Vector Graphic - Stroke");
+    // rectStroke.property("Color").expression = strokeColorExp;
+    // rectStroke.property("Stroke Width").expression = strokeExp;
+
+    // var rectFill = shapeGroup.property("Contents").property("ADBE Vector Graphic - Fill");
+    // rectFill.property("Color").expression = fillColorExp;
+    // rectFill.property("Opacity").expression = fillColorOpacityExp;
+}
+
+function addNewNull(comp, name, scaleExp, positionExp) {
+    var nullLayer = comp.layers.addNull();
+    nullLayer.name = name;
+    if (scaleExp !== "") {
+        nullLayer.property("Scale").expression = scaleExp;
+    }
+    if (positionExp !== "") {
+        nullLayer.property("Position").expression = positionExp;
+    }
+    return nullLayer;
+}
+
+function addSlider(comp, layer, name, value, showName, exp) {
+    var slider = layer.property("Effects").addProperty("ADBE Slider Control");
+    slider.name = name;
+    slider.property("Slider").setValue(value);
+    if (showName !== "") {
+        slider.property("Slider").addToMotionGraphicsTemplateAs(comp, showName);
+    }
+    if (exp !== "") {
+        slider.property("Slider").expression = exp;
+    }
+}
+
+function limitNum(num, limit) {
+    return num <= limit ? num : limit;
+}
+
+function addPointControl(layer, name, position, dimensions) {
+    const expressions = {
+        firstPoint: "var p = thisComp.layer(\"1-1\").transform.position;\n" + 
+                "[p[1], p[0]]",
+        // points: "var thisNum = " + (name - 1).toString() + ";\n" + 
+        //         "var multiplier = effect(\"multiplier\")(\"Slider\");\n" + 
+        //         "var x = effect(\"y" + limitNum(name, dimensions[0]).toString() + "\")(\"Slider\") * multiplier;\n" + 
+        //         "var y = effect(\"x" + limitNum(name, dimensions[1]).toString() + "\")(\"Slider\") * multiplier;\n" + 
+        //         "var gap = effect(\"gap\")(\"Slider\");\n" + 
+        //         "var prevCoords = effect(`point_${thisNum}`)(\"Point\");\n" + 
+        //         "[x + gap + prevCoords[0], y + gap + prevCoords[1]];",
+        newPoints: "var num = " + (name - 1).toString() + ";\n" + 
+                "var prev = effect(`point_${num-1}`)(\"Point\")\n" + 
+                "var col = effect(`column_${num - 1}`)(\"Slider\");\n" + 
+                "var row = effect(`row_${num - 1}`)(\"Slider\");\n" + 
+                "var aGap = effect(\"gap\")(\"Slider\");\n" + 
+                "[prev[0] + col * 10 + aGap, prev[1] + row * 10 + aGap];"
+    }
+
+    var pControl = layer.property("Effects").addProperty("ADBE Point Control");
+    pControl.name = "point_" + name.toString();
+    pControl.property("Point").setValue(position);
+    if (name === 1) {
+        pControl.property("Point").expression = expressions.firstPoint;
+    } else {
+        pControl.property("Point").expression = expressions.newPoints;
+    }
+}
+
+function writeBaseProp(layer, property, expression) {
+    if (expression !== "") {
+        layer.property(property).expression = expression;
+    } 
+}
+
+function addTextField(comp, name, text, sourceExp, positionExp) {
+    var aText = comp.layers.addText(text);
+    aText.name = name;
+
+    writeBaseProp(aText, "Position", positionExp);
+
+    if (sourceExp !== "") {
+        var t = aText.property("Text").property("Source Text");
+        t.expression = sourceExp;
+    }
+}
+
+function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
+    const comp = app.project.itemByID(compID);
+    const mainNull = addNewNull(comp, "mainNull", "[100, 100]", "[100, 100]");
 
     const expressions = {
         textPosition: "try { \n" + 
-                "    var n = thisLayer.name.split("-");\n" + 
-                "    var cel = thisComp.layer(`${n[1]}-${n[2]}`).content(\"Rectangle 1\").content(\"Rectangle Path 1\").size;\n" + 
+                "    var n = thisLayer.name.split(\"-\");\n" + 
+                "    var cel = thisComp.layer(`${n[1]}-${n[2]}`).content(\"Group 1\").content(\"Rectangle Path 1\").size;\n" + 
                 "    var pos = thisComp.layer(`${n[1]}-${n[2]}`).transform.position;\n" + 
                 "    [pos[0] + cel[0] / 2, pos[1] + cel[1] / 2];\n" + 
                 "} catch (e) {\n" + 
@@ -60,68 +231,121 @@ function createTable(columns, rows, csv, compID, isHorizHeader, isVertHeader) {
                 "    var d = cellSize[direction];\n" +
                 "    var x = 0;\n" +
                 "    for (var i = 0; i < d; i++) {\n" +
-                "        x += thisComp.layer(\"" + mainNull + "\").effect(`${axis}${coords[direction] + i}`)(\"Slider\");\n" +
+                "        x += thisComp.layer(\"" + mainNull.name + "\").effect(`${axis}${coords[direction] + i}`)(\"Slider\");\n" +
                 "    }\n" +
-                "    return x * 10 + thisComp.layer(\"" + mainNull + "\").effect(\"gap\")(\"Slider\") * (cellSize[direction] - 1);\n" +
+                "    return x * 10 + thisComp.layer(\"" + mainNull.name + "\").effect(\"gap\")(\"Slider\") * (cellSize[direction] - 1);\n" +
                 "}\n" +
                 "[newSize(0), newSize(1)];",
 
-        cellAnchor: "var p = content(\"Rectangle 1\").content(\"Rectangle Path 1\").size;\n" + 
+        cellAnchor: "var p = content(\"Group 1\").content(\"Rectangle Path 1\").size;\n" + 
                 "[p[0] / 2 * -1, p[1] / 2 * -1];",
 
-        cellPosition: "var coords = effect(\"cellCoordinates\")(\"Point\");\n" +
-                "var x = thisComp.layer(\"" + mainNull + "\").effect(`${coords[0]}`)(\"Point\")[1];\n" +
-                "var y = thisComp.layer(\"" + mainNull + "\").effect(`${coords[1]}`)(\"Point\")[0];\n" +
-                "[x, y];", 
+        cellPosition: "coords = effect(\"cellCoordinates\")(\"Point\");\n" +
+                "[thisComp.layer(\"" + mainNull.name + "\").effect(`point_${coords[1]}`)(\"Point\")[0], " + 
+                "thisComp.layer(\"" + mainNull.name + "\").effect(`point_${coords[0]}`)(\"Point\")[1]]",
+        
+        // "var coords = effect(\"cellCoordinates\")(\"Point\");\n" +
+        //         "var x = thisComp.layer(\"" + mainNull.name + "\").effect(`point_${coords[0]}`)(\"Point\")[1];\n" +
+        //         "var y = thisComp.layer(\"" + mainNull.name + "\").effect(`point_${coords[1]}`)(\"Point\")[0];\n" +
+        //         "[x, y];", 
 
         cellScale: "[100, 100];",
-
-        coordPoint0: "var p = thisComp.layer(\"1-1\").transform.position;\n" + 
-                "[p[1], p[0]]",
-
-        coordPoints: "var thisNum = 1;\n" +
-                "var multiplier = effect(\"multiplier\")(\"Slider\");\n" +
-                "var x = effect(`y${thisNum}`)(\"Slider\") * multiplier;\n" +
-                "var y = effect(`x${thisNum}`)(\"Slider\") * multiplier;\n" +
-                "var gap = effect(\"gap\")(\"Slider\");\n" +
-                "var prevCoords = effect(`${thisNum}`)(\"Point\");\n" +
-                "[x + gap + prevCoords[0], y + gap + prevCoords[1]];",
 
     }
 
 
-    var comp = app.project.itemByID(compID);
+    var tableDimensions = new Array();
 
-    
+    if (csv || csv !== "") {
+        var csvFile = new File(csv);
 
-    var csvFile = File(csv);
-    new ImportOptions().file = csvFile;
+        try {
 
-    app.project.importFile(ImportOptions);
+            var projData = app.project.importFile(new ImportOptions(csvFile));
+            var aFile = comp.layers.add(projData);
+            // ADBE Data Group ADBE DataLayer Num Rows
+            var data = aFile.property("ADBE Data Group").property("ADBE DataLayer Num Rows");
+            processProperty(data)
 
-    csvFile.open("r");
-    
-    var data = csvFile.read().split("\n");
-    var line = data[0].split("\t");
-    
-    
-    csvFile.close();
-    
-    
+
+            var tempArray = csv.toLowerCase().split(".");
+            var extension = tempArray[tempArray.length - 1];
+            var separator;
+
+            if (extension === "csv") {
+                separator = ",";
+            } else if (extension === "tsv" || extension === "txt") {
+                separator = "\t";
+            } else {
+                separator = ";";
+            }
+
+            csvFile.open("r");            
+            var data = csvFile.read();
+            var csvData = csvData(data, separator);
+
+            csvFile.close();
+
+            if (data.length < 2 || line.length < 2) {
+                throw new Error("Некорректный файл!"); // not sure this is necessary
+            }
+
+        tableDimensions = [data.length, line.length];
+
+        } catch (err) {
+            alert("Некорректный файл!");
+        }
+    } else {
+        tableDimensions = [rows, columns];
+    }
+
+    var dotsQuantity = Math.max(tableDimensions[0], tableDimensions[1]);
+
+    for (var i = 1; i <= dotsQuantity; i++) {
+        addPointControl(mainNull, i, [-100, -100], tableDimensions);
+    }
+
+    addSlider(comp, mainNull, "gap", 10, "Зазор", "");
+    addSlider(comp, mainNull, "multiplier", 10, "", "");
+
+    for (var i = 1; i <= tableDimensions[0]; i++) {
+        addSlider(comp, mainNull, "y" + i.toString(), 10, "Строка " + i.toString(), "");
+    }
+
+    for (var i = 1; i <= tableDimensions[1]; i++) {
+        addSlider(comp, mainNull, "x" + i.toString(), 40, "Столбец " + i.toString(), "");
+    }
+
+    for (var i = 1; i <= tableDimensions[1]; i++) {
+        for (var j = 1; j <= tableDimensions[0]; j++) {
+            var cellName = i.toString() + "-" + j.toString();
+            addRectangle(comp, cellName, [400, 150], [0.1, 0.3, 0.1], 100, 3, 
+                [0.1, 0.1, 0.3], 100, [100, 100]);
+            rectAddExpressions(comp, cellName, expressions.cellSize, expressions.cellPosition, 
+                expressions.cellScale, expressions.cellAnchor);
+        }
+    }
+
+    // for (var i = 1; i <= tableDimensions[1]; i++) {
+    //     for (var j = 0; j < tableDimensions[0]; j++) {
+    //         if (j === 0) {
+                
+    //             addTextField(comp,"t-" + i.toString() + "-" + (j + 1).toString(), "cellData", 
+    //             "thisComp.layer(\"" + filename + "\")(\"Data\")(\"Outline\")(" + i.toString() + ")", expressions.textPosition);
+    //         } else {
+    //             addTextField(comp,"t-" + i.toString() + "-" + (j + 1).toString(), "cellData", 
+    //             "thisComp.layer(\"" + filename + "\")(\"Data\")(\"Outline\")(" + i.toString() + ")(" + j.toString() + ")", expressions.textPosition);
+    //         }
+    //     }
+    // }
+
     var fld = app.project.file.fsName;
     log(fld);
-
-
-
-
     log(compID);
-    log(columns);
-    log(rows);
+    log(tableDimensions);
     log(csv);
     log(isHorizHeader);
     log(isVertHeader);
-
-
 
 }
 
@@ -294,7 +518,7 @@ function promptWindow() {
         var rowsNum = parseInt(rows.text);
         var columnsNum = parseInt(columns.text);
         if (fileIsSelected || (rowsNum > 1 && columnsNum > 1)) {
-            createTable(rows.text, columns.text, fileAddress.text, 
+            createTable(rowsNum, columnsNum, fileAddress.text, 
                 compIDs[comps.indexOf(dropMenu.selection.text)], headerIsHoriz.value, headerIsVert.value);
             dialog.close();
            
