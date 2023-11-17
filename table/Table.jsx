@@ -88,7 +88,7 @@ function csvData(data, separator) {
             if (aChar === separator) {
                 fieldCounter++;
             }
-            if (aChar === EOL) {
+            if (aChar === EOL && fieldCounter > 0) {
                 fieldCounter++;
                 dataArray.push(fieldCounter);
                 fieldCounter = 0;
@@ -166,7 +166,7 @@ function limitNum(num, limit) {
 function addPointControl(layer, name, position, dimensions) {
     const expressions = {
         firstPoint: "var p = thisComp.layer(\"1-1\").transform.position;\n" + 
-                "[p[1], p[0]]",
+                "[p[0], p[1]]",
         // points: "var thisNum = " + (name - 1).toString() + ";\n" + 
         //         "var multiplier = effect(\"multiplier\")(\"Slider\");\n" + 
         //         "var x = effect(\"y" + limitNum(name, dimensions[0]).toString() + "\")(\"Slider\") * multiplier;\n" + 
@@ -175,9 +175,9 @@ function addPointControl(layer, name, position, dimensions) {
         //         "var prevCoords = effect(`point_${thisNum}`)(\"Point\");\n" + 
         //         "[x + gap + prevCoords[0], y + gap + prevCoords[1]];",
         newPoints: "var num = " + (name - 1).toString() + ";\n" + 
-                "var prev = effect(`point_${num-1}`)(\"Point\")\n" + 
-                "var col = effect(`column_${num - 1}`)(\"Slider\");\n" + 
-                "var row = effect(`row_${num - 1}`)(\"Slider\");\n" + 
+                "var prev = effect(`point_${num}`)(\"Point\")\n" + 
+                "var col = effect(\"column_" +  limitNum(name, dimensions[0]).toString() + "\")(\"Slider\");\n" + 
+                "var row = effect(\"row_" + limitNum(name, dimensions[1]).toString() + "\")(\"Slider\");\n" + 
                 "var aGap = effect(\"gap\")(\"Slider\");\n" + 
                 "[prev[0] + col * 10 + aGap, prev[1] + row * 10 + aGap];"
     }
@@ -227,7 +227,7 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
         cellSize: "var coords = effect(\"cellCoordinates\")(\"Point\");\n" +
                 "var cellSize = effect(\"cellSize\")(\"Point\");\n" +
                 "function newSize(direction) {\n" +
-                "    var axis = direction === 0 ? \"x\" : \"y\";\n" +
+                "    var axis = direction === 0 ? \"column_\" : \"row_\";\n" +
                 "    var d = cellSize[direction];\n" +
                 "    var x = 0;\n" +
                 "    for (var i = 0; i < d; i++) {\n" +
@@ -282,15 +282,15 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
 
             csvFile.open("r");            
             var data = csvFile.read();
-            var csvData = csvData(data, separator);
+            tableDimensions = csvData(data, separator);
 
             csvFile.close();
 
-            if (data.length < 2 || line.length < 2) {
-                throw new Error("Некорректный файл!"); // not sure this is necessary
-            }
+            //if (data.length < 2 || line.length < 2) {
+            //    throw new Error("Некорректный файл!"); // not sure this is necessary
+            //}
 
-        tableDimensions = [data.length, line.length];
+        //tableDimensions = [data.length, line.length];
 
         } catch (err) {
             alert("Некорректный файл!");
@@ -309,11 +309,11 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
     addSlider(comp, mainNull, "multiplier", 10, "", "");
 
     for (var i = 1; i <= tableDimensions[0]; i++) {
-        addSlider(comp, mainNull, "y" + i.toString(), 10, "Строка " + i.toString(), "");
+        addSlider(comp, mainNull, "row_" + i.toString(), 10, "Строка " + i.toString(), "");
     }
 
     for (var i = 1; i <= tableDimensions[1]; i++) {
-        addSlider(comp, mainNull, "x" + i.toString(), 40, "Столбец " + i.toString(), "");
+        addSlider(comp, mainNull, "column_" + i.toString(), 40, "Столбец " + i.toString(), "");
     }
 
     for (var i = 1; i <= tableDimensions[1]; i++) {
