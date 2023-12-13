@@ -403,22 +403,26 @@ function createSizeArrow(baseCompName, comp, num) {
         extLineTopNull: "var mainPoint = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
                 "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLine\")(\"Slider\");\n" +
-                "[mainPoint[0] + extLineLen * Math.cos(angle), mainPoint[1] + extLineLen * Math.sin(angle)];",
+                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl\")(\"Angle\") * Math.PI / 180;\n" +
+                "[mainPoint[0] + extLineLen * Math.cos(angle + rads), mainPoint[1] + extLineLen * Math.sin(angle + rads)];",
 
         extLineBottomNull: "var mainPoint = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
                 "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLine\")(\"Slider\");\n" +
-                "[mainPoint[0] + extLineLen * Math.cos(angle), mainPoint[1] + extLineLen * Math.sin(angle)];",
+                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl\")(\"Angle\") * Math.PI / 180;\n" +
+                "[mainPoint[0] + extLineLen * Math.cos(angle + rads), mainPoint[1] + extLineLen * Math.sin(angle + rads)];",
 
         extLineTailTopNull: "var mainPoint = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
                 "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLineTail\")(\"Slider\");\n" +
-                "[mainPoint[0] - extLineLen * Math.cos(angle), mainPoint[1] - extLineLen * Math.sin(angle)];",
+                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl\")(\"Angle\") * Math.PI / 180;\n" +
+                "[mainPoint[0] - extLineLen * Math.cos(angle + rads), mainPoint[1] - extLineLen * Math.sin(angle + rads)];",
 
         extLineTailBottomNull: "var mainPoint = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
                 "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLineTail\")(\"Slider\");\n" +
-                "[mainPoint[0] - extLineLen * Math.cos(angle), mainPoint[1] - extLineLen * Math.sin(angle)];",
+                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl\")(\"Angle\") * Math.PI / 180;\n" +
+                "[mainPoint[0] - extLineLen * Math.cos(angle + rads), mainPoint[1] - extLineLen * Math.sin(angle + rads)];",
 
         shelfPointNull: "shelfPoint = thisComp.layer(\"" + shelfPoint + "\").transform.position;\n" +
                 "textSize = thisComp.layer(\"mainLabel\").sourceRectAtTime();\n" +
@@ -525,6 +529,12 @@ function createSizeArrow(baseCompName, comp, num) {
     addSlider(comp, mainNullLayer, "fontSize", 75, "Размер шрифта", "");
 
     addAngleControl(mainNullLayer, "angle", 0, expressions.angle);
+    addAngleControl(mainNullLayer, "extLineAngleControl", 0, "");
+
+    mainNullLayer.property("Effects")
+            .property("extLineAngleControl")
+            .property("ADBE Angle Control-0001")
+            .addToMotionGraphicsTemplateAs(comp, "Угол выносной линии");
 
     addCheckBox(comp, mainNullLayer, "leftRightSwitch", "Лево / право");
     addCheckBox(comp, mainNullLayer, "shelfSwitch", "Полка");
@@ -533,10 +543,10 @@ function createSizeArrow(baseCompName, comp, num) {
     addCheckBox(comp, mainNullLayer, "turnArrows", "Развернуть стрелки");
     addCheckBox(comp, mainNullLayer, "turnLabel", "Развернуть плашку на 180");
 
-    addDropDownMenu(mainNullLayer, "labelType", ["Текст на полке",
-            "Свободная", 
-            "Привязанная без поворота", 
-            "Привязанная с поворотом"]);
+    addDropDownMenu(mainNullLayer, "labelType", ["Текст на полке (Shelf)",
+            "Свободная (Free)", 
+            "Привязанная без поворота (Attached without rotation)", 
+            "Привязанная с поворотом (Attached with rotation)"]);
     mainNullLayer.property("Effects")
             .property("Dropdown Menu Control")
             .property("Menu")
@@ -603,9 +613,11 @@ function createSizeArrow(baseCompName, comp, num) {
     arrowTop.property("Position").expression = expressions.arrowTop;
     arrowTop.property("Scale").expression = expressions.arrowSize;
     arrowTop.property("Rotation").expression = expressions.arrowTopAngle;
+    arrowTop.moveToBeginning();
     arrowBottom.property("Position").expression = expressions.arrowBottom;
     arrowBottom.property("Scale").expression = expressions.arrowSize;
     arrowBottom.property("Rotation").expression = expressions.arrowBottomAngle;
+    arrowBottom.moveToBeginning();
 
     var figureToLock = lines.concat(["arrowTop", "arrowBottom"]).concat(extLines);
     
@@ -657,7 +669,7 @@ function main() {
         baseComp.layers.byName(name).locked = true;
 
         var nullNames = ["topNull", "shelfNull", "bottomNull", "textNull"];
-        var nullPos = [[300, 600], [900, 600], [700, 800], [400, 400]];
+        var nullPos = [[1500, 900], [1300, 1200], [500, 900], [400, 400]];
 
         for (i = 0; i < nullNames.length; i++) {
             var nullName = addNumToName(nullNames[i], num);
@@ -672,15 +684,3 @@ function main() {
 }
 
 main();
-
-/*
-
-TODO: 
-1. Вынести стрелки поверх основной направляющей (чтоб не нарушалась заливка)
-2. Добавить смену угла поворота на выносные линии
-3. Нули начала и конца по дофолту по горизонтали
-
-
-*/
-
-
