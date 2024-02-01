@@ -176,7 +176,7 @@ function createCallout(comp, num) {
     const secondLineStart = "secondLineStart_" + num; //
     const secondLineEnd = "secondLineEnd_" + num; //
     const animationStart = 0.0;
-    const lineAppearance = 0.2;
+    const lineAppearance = 0.3;
     const animationEnd = 0.6;
 
 
@@ -212,7 +212,8 @@ function createCallout(comp, num) {
 
         textPosition: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
                 "const s = thisLayer.sourceRectAtTime().width;\n" +
-                "const x = m == 1 ? -20 : 20 + s;\n" +
+                "const x = m == 1 ? -20 - s / 2 : 20 + s / 2;" + 
+                //"const x = m == 1 ? -20 : 20 + s;\n" +
                 "transform.anchorPoint = [x, 25];",
 
         innerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"innerCircleSize\")(\"Slider\");\n" + "[temp, temp]",
@@ -342,7 +343,7 @@ function createCallout(comp, num) {
             opacity.addKey(lineAppearance);
             opacity.setValueAtKey(1, 0);
             opacity.setValueAtKey(2, 100);
-            trimEnd.addKey(animationStart + lineAppearance);
+            trimEnd.addKey(animationStart + lineAppearance - 0.1);
             trimEnd.addKey(animationEnd / 2 + lineAppearance);
             trimEnd.setValueAtKey(1, 0);
             trimEnd.setValueAtKey(2, 100);
