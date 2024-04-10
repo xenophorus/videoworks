@@ -34,10 +34,11 @@ function processProperty(theProp) {
 
 function log(input) {
     $.writeln(input);
+    /*
     var logFile = File("e:/logfile.txt");
     logFile.open("a");
     logFile.writeln(input);
-    logFile.close();
+    logFile.close(); */
 }
 
 function addRectangle (comp, name, size, strokeColor, strokeOpacity, 
