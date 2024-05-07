@@ -403,25 +403,25 @@ function createSizeArrow(baseCompName, comp, num) {
         extLineTopNull: "var mainPoint = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
                 "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLine\")(\"Slider\");\n" +
-                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl\")(\"Angle\") * Math.PI / 180;\n" +
+                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl_1\")(\"Angle\") * Math.PI / 180;\n" +
                 "[mainPoint[0] + extLineLen * Math.cos(angle + rads), mainPoint[1] + extLineLen * Math.sin(angle + rads)];",
 
         extLineBottomNull: "var mainPoint = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
                 "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLine\")(\"Slider\");\n" +
-                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl\")(\"Angle\") * Math.PI / 180;\n" +
+                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl_2\")(\"Angle\") * Math.PI / 180;\n" +
                 "[mainPoint[0] + extLineLen * Math.cos(angle + rads), mainPoint[1] + extLineLen * Math.sin(angle + rads)];",
 
         extLineTailTopNull: "var mainPoint = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
                 "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLineTail\")(\"Slider\");\n" +
-                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl\")(\"Angle\") * Math.PI / 180;\n" +
+                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl_1\")(\"Angle\") * Math.PI / 180;\n" +
                 "[mainPoint[0] - extLineLen * Math.cos(angle + rads), mainPoint[1] - extLineLen * Math.sin(angle + rads)];",
 
         extLineTailBottomNull: "var mainPoint = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
                 "var angle = thisComp.layer(\"" + mainNull + "\").effect(\"radian\")(\"Slider\");\n" +
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"extLineTail\")(\"Slider\");\n" +
-                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl\")(\"Angle\") * Math.PI / 180;\n" +
+                "var rads = thisComp.layer(\"" + mainNull + "\").effect(\"extLineAngleControl_2\")(\"Angle\") * Math.PI / 180;\n" +
                 "[mainPoint[0] - extLineLen * Math.cos(angle + rads), mainPoint[1] - extLineLen * Math.sin(angle + rads)];",
 
         shelfPointNull: "shelfPoint = thisComp.layer(\"" + shelfPoint + "\").transform.position;\n" +
@@ -529,12 +529,17 @@ function createSizeArrow(baseCompName, comp, num) {
     addSlider(comp, mainNullLayer, "fontSize", 75, "Размер шрифта", "");
 
     addAngleControl(mainNullLayer, "angle", 0, expressions.angle);
-    addAngleControl(mainNullLayer, "extLineAngleControl", 0, "");
+    addAngleControl(mainNullLayer, "extLineAngleControl_1", 0, "");
+    addAngleControl(mainNullLayer, "extLineAngleControl_2", 0, "");
 
     mainNullLayer.property("Effects")
-            .property("extLineAngleControl")
+            .property("extLineAngleControl_1")
             .property("ADBE Angle Control-0001")
-            .addToMotionGraphicsTemplateAs(comp, "Угол выносной линии");
+            .addToMotionGraphicsTemplateAs(comp, "Угол выносной линии 1");
+    mainNullLayer.property("Effects")
+            .property("extLineAngleControl_2")
+            .property("ADBE Angle Control-0001")
+            .addToMotionGraphicsTemplateAs(comp, "Угол выносной линии 2");
 
     addCheckBox(comp, mainNullLayer, "leftRightSwitch", "Лево / право");
     addCheckBox(comp, mainNullLayer, "shelfSwitch", "Полка");

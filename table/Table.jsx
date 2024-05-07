@@ -161,7 +161,7 @@ function addPointControl(layer, name, position, dimensions) {
                 "var row = effect(\"row_" + limitNum(name - 1, dimensions[0]).toString() + "\")(\"Slider\");\n" + 
                 "var col = effect(\"column_" +  limitNum(name - 1, dimensions[1]).toString() + "\")(\"Slider\");\n" + 
                 "var aGap = effect(\"gap\")(\"Slider\");\n" + 
-                "[prev[0] + col * 10 + aGap, prev[1] + row * 10 + aGap];"
+                "[prev[0] + row * 10 + aGap, prev[1] + col * 10 + aGap];"
     }
 
     var pControl = layer.property("Effects").addProperty("ADBE Point Control");
@@ -203,13 +203,13 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
                 "    var pos = thisComp.layer(`${n[1]}-${n[2]}`).transform.position;\n" + 
                 "    [pos[0] + cel[0] / 2, pos[1] + cel[1] / 2];\n" + 
                 "} catch (e) {\n" + 
-                "    [-200, 0];\n" + 
+                "    [-200, -200];\n" + 
                 "}",
 
         cellSize: "var coords = effect(\"cellCoordinates\")(\"Point\");\n" +
                 "var cellSize = effect(\"cellSize\")(\"Point\");\n" +
                 "function newSize(direction) {\n" +
-                "    var axis = direction === 0 ? \"column_\" : \"row_\";\n" +
+                "    var axis = direction === 0 ? \"column_\" : \"row_\" ;\n" +
                 "    var d = cellSize[direction];\n" +
                 "    var x = 0;\n" +
                 "    for (var i = 0; i < d; i++) {\n" +
@@ -217,7 +217,7 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
                 "    }\n" +
                 "    return x * 10 + thisComp.layer(\"" + mainNull.name + "\").effect(\"gap\")(\"Slider\") * (cellSize[direction] - 1);\n" +
                 "}\n" +
-                "[newSize(0), newSize(1)];",
+                "[newSize(1), newSize(0)];",
 
         cellAnchor: "var p = content(\"Group 1\").content(\"Rectangle Path 1\").size;\n" + 
                 "[p[0] / 2 * -1, p[1] / 2 * -1];",
@@ -275,24 +275,25 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
         addPointControl(mainNull, i, [-100, -100], tableDimensions);
     }
 
-    addSlider(comp, mainNull, "gap", 10, "Зазор", "");
+    addSlider(comp, mainNull, "gap", 5, "Зазор", ""); /////////////////
     addSlider(comp, mainNull, "multiplier", 10, "", "");
 
-    for (var i = 1; i <= tableDimensions[0]; i++) {
-        addSlider(comp, mainNull, "row_" + i.toString(), 10, "Строка " + i.toString(), "");
+    for (var i = 1; i <= dotsQuantity; i++) {
+        addSlider(comp, mainNull, "row_" + i.toString(), 40, "Столбец " + i.toString(), ""); //////////////////////
+        addSlider(comp, mainNull, "column_" + i.toString(), 10, "Строка " + i.toString(), "");
     }
 
-    for (var i = 1; i <= tableDimensions[1]; i++) {
-        addSlider(comp, mainNull, "column_" + i.toString(), 40, "Столбец " + i.toString(), "");
-    }
 
     for (var i = 1; i <= tableDimensions[0]; i++) {
         for (var j = 1; j <= tableDimensions[1]; j++) {
             var cellName = i.toString() + "-" + j.toString();
+            var textName = "t-" + cellName;
             addRectangle(comp, cellName, [400, 150], [0.1, 0.3, 0.1], 100, 3, 
                 [0.1, 0.1, 0.3], 100, [100, 100]);
             rectAddExpressions(comp, cellName, expressions.cellSize, expressions.cellPosition, 
                 expressions.cellScale, expressions.cellAnchor);
+            addTextField(comp, textName, "cellText", "", expressions.textPosition);
+
         }
     }
 
@@ -322,6 +323,8 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
 function promptWindow() {
     
     var comp = app.project.activeItem;
+    
+    var selectedSeq = 0;
 
     var comps = new Array();
     var compIDs = new Array();
@@ -463,7 +466,12 @@ function promptWindow() {
 
     var dropMenu = sequencePanel.add("dropdownlist", undefined, comps);
     if (comp !== null) {
-        dropMenu.selection = comps.indexOf(comp.name);
+        for (i=0; i < comps.length; i++) {
+            if (comps[i] == comp.name) {
+                selectedSeq = i;
+            }
+        }
+        dropMenu.selection = selectedSeq;
     } else {
         dropMenu.selection = 0;
     }
@@ -489,12 +497,11 @@ function promptWindow() {
         var columnsNum = parseInt(columns.text);
         if (fileIsSelected || (rowsNum > 1 && columnsNum > 1)) {
             createTable(rowsNum, columnsNum, fileAddress.text, 
-                compIDs[comps.indexOf(dropMenu.selection.text)], headerIsHoriz.value, headerIsVert.value);
+                compIDs[selectedSeq], headerIsHoriz.value, headerIsVert.value);
             dialog.close();
            
         } else {
             alert("Надо либо указать корректные размеры таблицы,\n" + "либо указать CSV-файл.");
-        
         }
     }
     
