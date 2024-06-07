@@ -15,6 +15,14 @@
     }
 }
 
+
+/**
+ * TODO:
+ * 1. считать размер секвенции и создавать коллаут в центре
+ * 2. Снова поломали координаты текста
+ * 3. вывести текст наверх, к якорям
+ */
+
 function addNewNull(comp, name, exp) {
     var nullLayer = comp.layers.addNull();
     nullLayer.name = name;
