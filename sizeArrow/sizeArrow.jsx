@@ -24,6 +24,24 @@
  * 
  */
 
+/**
+ * лечение уголков стрелок
+ * X = a[0] - b[0]
+ * Y = a[1] - b[1]
+ * bias = outline.thickness
+ * 
+ * xModifier = X > 0 ? 1 : -1
+ * yModifier = Y > 0 ? 1 : -1
+ * pointDist = Math.sqrt(Math.pwr(X, 2) + Math.pwr(Y, 2))
+ * 
+ * xPerc = pointDist / X
+ * yPerc = pointDist / Y
+ * 
+ * [pos[0] + bias * xPerc * xModifier, 
+ * pos[1] + bias * yPerc * yModifier]
+ * 
+ */
+
 function log(input) {
     $.writeln(input);
     // var logFile = File("e:/logfile.txt");
