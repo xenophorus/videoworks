@@ -167,7 +167,7 @@ function addColorControl(comp, layer, name, color, showName) {
 
 function attachCheckBox(comp, name, baseNull) {
     var layerOpacity = comp.layers.byName(name).property("Opacity");
-    layerOpacity.expression = "transform.opacity = 100 * thisComp.layer(\"" + baseNull + "\").effect(\"" + name + "Switch\")(\"Checkbox\");"
+    layerOpacity.expression = "100 * thisComp.layer(\"" + baseNull + "\").effect(\"" + name + "Switch\")(\"Checkbox\");"
 }
 
 function addToMGT(comp, name, rusName, baseNull) {
@@ -189,18 +189,6 @@ function createCallout(comp, num) {
 
 
     const expressions = {
-        endPointExp: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
-                "const modifier = m == 1 ? 1 : -1;\n" +
-                "const x = (thisComp.layer(\"textField\").sourceRectAtTime().width + 40) * modifier + thisComp.layer(\"" + centerPoint + "\").transform.position[0];\n" +
-                "const y = thisComp.layer(\"" + centerPoint + "\").transform.position[1];\n" +
-                "[x, y];",
-
-        secondLineStartExp: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
-                "const modifier = m == 1 ? 1 : -1;\n" +
-                "const x = thisComp.layer(\"" + centerPoint + "\").transform.position[0] + (thisComp.layer(\"textField\").sourceRectAtTime().width * 0.33) * modifier;\n" +
-                "const y = thisComp.layer(\"" + centerPoint + "\").transform.position[1] + 15;\n" +
-                "[x, y];",
-
         secondLineEndExp: "var x = thisComp.layer(\"" + endPoint + "\").transform.position[0];\n" +
                 "var y = thisComp.layer(\"" + endPoint + "\").transform.position[1] + 15;\n" +
                 "[x, y];",
@@ -208,7 +196,7 @@ function createCallout(comp, num) {
         angleRotation: "const x = thisComp.layer(\"" + arrowPoint + "\").transform.position[0] - thisComp.layer(\"" + centerPoint + "\").transform.position[0];\n" +
                 "const y = (thisComp.layer(\"" + arrowPoint + "\").transform.position[1] - thisComp.layer(\"" + centerPoint + "\").transform.position[1]) * -1;\n" +
                 "const angle = (Math.atan2(x, y) + Math.PI) * 180 / Math.PI;\n" +
-                "transform.rotation = angle;",
+                "angle;",
 
         strokeColor: "thisComp.layer(\"" + baseNull + "\").effect(\"lineColor\")(\"Color\");",
         
@@ -218,15 +206,17 @@ function createCallout(comp, num) {
 
         angleThickness: "thisComp.layer(\"" + baseNull + "\").effect(\"angleThickness\")(\"Slider\");",
 
-        textPosition: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
-                "const s = thisLayer.sourceRectAtTime().width;\n" +
-                "const x = m == 1 ? -20 - s / 2 : 20 + s / 2;" + 
-                //"const x = m == 1 ? -20 : 20 + s;\n" +
-                "transform.anchorPoint = [x, 25];",
+        //textPosition: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
+        //        "const s = thisLayer.sourceRectAtTime().width;\n" +
+        //        "const x = m == 1 ? -20 - s / 2 : 20 + s / 2;" + 
+        //        //"const x = m == 1 ? -20 : 20 + s;\n" +
+        //        "transform.anchorPoint = [x, 25];",
 
-        innerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"innerCircleSize\")(\"Slider\");\n" + "[temp, temp]",
+        innerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"innerCircleSize\")(\"Slider\");\n" + 
+            "[temp, temp]",
 
-        outerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSize\")(\"Slider\");\n" + "[temp, temp]",
+        outerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"outerCircleSize\")(\"Slider\");\n" + 
+            "[temp, temp]",
 
         angleSize: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"arrowSize\")(\"Slider\");\n" + 
                 "[temp, temp];",
@@ -244,6 +234,7 @@ function createCallout(comp, num) {
 
     };
 
+    /* 
     var aText = comp.layers.addText("Callout_" + num);
     aText.name = "textField";
     aText.position.expression = "const x = thisComp.layer(\"" + centerPoint + "\").transform.position[0];\n" + 
@@ -266,7 +257,8 @@ function createCallout(comp, num) {
     textScale.addKey(animationEnd * 0.5);
     textScale.addKey(animationEnd);
     textScale.setValueAtKey(1, [80, 80]);
-    textScale.setValueAtKey(2, [100, 100]);
+    textScale.setValueAtKey(2, [100, 100]); 
+    */
 
     var nullProps = comp.layers.addNull();
     nullProps.name = baseNull;
@@ -279,6 +271,9 @@ function createCallout(comp, num) {
     addSlider(nullProps, "innerCircleSize", 50);
     addSlider(nullProps, "outerCircleSize", 70);
     addSlider(nullProps, "arrowSize", 20);
+    addSlider(nullProps, "textHorBias", 50);
+    addSlider(nullProps, "textVerBias", 50);
+
 
     addCheckBox(comp, nullProps, "leftRightSwitch", "Право/лево");
     addCheckBox(comp, nullProps, "angleSwitch", "Включить указатель");
@@ -294,8 +289,8 @@ function createCallout(comp, num) {
     
     addNewNull(comp, arrowPoint, "");
     addNewNull(comp, centerPoint, "");        
-    addNewNull(comp, "endPoint_" + num, expressions.endPointExp);
-    addNewNull(comp, "secondLineStart_" + num, expressions.secondLineStartExp);
+    addNewNull(comp, "endPoint_" + num, "");
+    addNewNull(comp, "secondLineStart_" + num, "");
     addNewNull(comp, "secondLineEnd_" + num, expressions.secondLineEndExp);
 
     //shapes
@@ -336,8 +331,8 @@ function createCallout(comp, num) {
     for (i = 0; i < lines.length; i++) {
         addShapeToLayer(comp, lines[i], line, [0.9,0.9,0.9], 100, 10, [0, 0], expressions.strokeColor, "", false);
         var lineLayer = comp.layers.byName(lines[i]);
-        var textLayer = comp.layers.byName("textField");
-        lineLayer.moveAfter(textLayer);
+        //var textLayer = comp.layers.byName("textField");
+        //lineLayer.moveAfter(textLayer);
 
         var trim = lineLayer.property("ADBE Root Vectors Group")
                 .property("ADBE Vector Group")
@@ -402,6 +397,8 @@ function createCallout(comp, num) {
     addToMGT(comp, "outerCircleSize", "Размер внешнего круга", baseNull);
     addToMGT(comp, "arrowSize", "Размер указателя", baseNull);
     addToMGT(comp, "angleThickness", "Толщина указателя", baseNull);
+    addToMGT(comp, "textHorBias", "Смещение текста по горизонтали", baseNull);
+    addToMGT(comp, "textVerBias", "Смещение текста по вертикалия", baseNull);
 
     var lineThicknessLayers = [
         comp.layers.byName("outerCircle"), 
@@ -453,8 +450,10 @@ function main () {
     app.beginUndoGroup("New callout");
     if (baseComp instanceof CompItem) {
         var dig = generateRandomNumber().toString().split(".")[1].slice(0, 6);
+        var baseWidth = baseComp.width;
+        var baseHeight = baseComp.height;
         var name = "callout_" + dig;
-        var newCallout = app.project.items.addComp(name, 3840, 2160, 1, 60, 50);
+        var newCallout = app.project.items.addComp(name, baseWidth, baseHeight, 1, 60, 50);
 
         baseComp.layers.add(newCallout);
         log("Composition " + name + " created");
@@ -465,8 +464,11 @@ function main () {
         var mainArrow = baseComp.layers.addNull();
         mainArrow.name = "mainArrow" + dig;
         mainArrow.property("Scale").expression = "[100, 100]";
+        //processProperty(mainArrow)
+        mainArrow.property("Position").setValue([100, 300]);
         var mainCenter = baseComp.layers.addNull();
         mainCenter.name = "mainCenter" + dig;
+        mainCenter.property("Position").setValue([300, 200]);
         mainCenter.property("Scale").expression = "[100, 100]";
 
         var slaveCenter = newCallout.layers.byName("centerPoint_" + dig);
@@ -482,6 +484,79 @@ function main () {
         slaveCenter.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[0];\n" + 
         "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[1];\n" + 
         "[x, y]";
+
+        /*
+        textField = comp("2024_07_00_Минипроектор_на_потолке_ Linked Comp 02").layer("textField_768947");
+const m = thisComp.layer("mainNull_768947").effect("leftRightSwitch")("Checkbox").value;
+const modifier = m == 1 ? 1 : -1;
+const x = thisComp.layer("centerPoint_768947").transform.position[0] + (textField.sourceRectAtTime().width * 0.33) * modifier;
+const y = thisComp.layer("centerPoint_768947").transform.position[1] + 15;
+[x, y];
+        
+        */
+        
+        const baseNull = "mainNull_" + dig;
+        const centerPoint = "centerPoint_" + dig;
+
+        
+        const exprs = {
+            endPointExp: "textField = comp(\"" + baseComp.name + "\").layer(\"" + "textField_" + dig + "\") \n" + 
+                "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
+                "const modifier = m == 1 ? 1 : -1;\n" +
+                "const x = (textField.sourceRectAtTime().width + 40) * modifier + thisComp.layer(\"" + centerPoint + "\").transform.position[0];\n" +
+                "const y = thisComp.layer(\"" + centerPoint + "\").transform.position[1];\n" +
+                "[x, y];",
+
+            secondLineStartExp: "textField = comp(\"" + baseComp.name + "\").layer(\"" + "textField_" + dig + "\") \n" + 
+                "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
+                "const modifier = m == 1 ? 1 : -1;\n" +
+                "const x = thisComp.layer(\"" + centerPoint + "\").transform.position[0] + (textField.sourceRectAtTime().width * 0.33) * modifier;\n" +
+                "const y = thisComp.layer(\"" + centerPoint + "\").transform.position[1] + 15;\n" +
+                "[x, y];",
+
+            textPosition: "centerNull = thisComp.layer(\"" + mainCenter.name + "\");\n" +
+                "const x = centerNull.transform.position[0];\n" +
+                "const y = centerNull.transform.position[1];\n" +
+                "[x, y];",
+
+            textAnchorPosition: "calloutComp = comp(\"callout_" + dig + "\");\n" +
+                "horBias = calloutComp.layer(\"" + baseNull + "\").effect(\"textHorBias\")(\"Slider\").value;\n" +
+                "vertBias = calloutComp.layer(\"" + baseNull + "\").effect(\"textVerBias\")(\"Slider\").value;\n" +
+                "leftRightSwitch = calloutComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
+                "const s = thisLayer.sourceRectAtTime().width;\n" +
+                "const h = thisLayer.sourceRectAtTime().height;\n" +
+                "const x = leftRightSwitch == 1 ? -20 - s / 2 : 20 + s / 2;\n" + 
+                "[x + (horBias - 50) * 10, h + (vertBias - 50) * 10];"
+        }
+        
+        var aText = baseComp.layers.addText("Callout_" + dig);
+        aText.name = "textField_" + dig;
+        aText.position.expression = exprs.textPosition;
+        aText.transform.anchorPoint.expression = exprs.textAnchorPosition;
+
+        const animationEnd = 0.6;
+    
+        var textOpacity = aText.property("Opacity");
+        
+        textOpacity.addKey(animationEnd * 0.5);
+        textOpacity.addKey(animationEnd);
+        textOpacity.setValueAtKey(1, 0);
+        textOpacity.setValueAtKey(2, 100);
+        
+        var textScale = aText.property("Scale");
+
+        textScale.addKey(animationEnd * 0.5);
+        textScale.addKey(animationEnd);
+        textScale.setValueAtKey(1, [80, 80]);
+        textScale.setValueAtKey(2, [100, 100]);
+
+        var endPoint = newCallout.layers.byName("endPoint_" + dig);
+        endPoint.position.expression = exprs.endPointExp;
+
+        var secondLineStart = newCallout.layers.byName("secondLineStart_" + dig);
+        secondLineStart.position.expression = exprs.secondLineStartExp;
+        
+        
     } else {
         alert("Надо сначала выбрать нужную композицию, потом запускать скрипт!");
     }
