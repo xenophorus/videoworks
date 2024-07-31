@@ -198,12 +198,6 @@ function createCallout(comp, num) {
 
         angleThickness: "thisComp.layer(\"" + baseNull + "\").effect(\"angleThickness\")(\"Slider\");",
 
-        //textPosition: "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
-        //        "const s = thisLayer.sourceRectAtTime().width;\n" +
-        //        "const x = m == 1 ? -20 - s / 2 : 20 + s / 2;" + 
-        //        //"const x = m == 1 ? -20 : 20 + s;\n" +
-        //        "transform.anchorPoint = [x, 25];",
-
         innerCircleSizeExp: "temp = thisComp.layer(\"" + baseNull + "\").effect(\"innerCircleSize\")(\"Slider\");\n" + 
             "[temp, temp]",
 
@@ -226,32 +220,6 @@ function createCallout(comp, num) {
 
     };
 
-    /* 
-    var aText = comp.layers.addText("Callout_" + num);
-    aText.name = "textField";
-    aText.position.expression = "const x = thisComp.layer(\"" + centerPoint + "\").transform.position[0];\n" + 
-            "const y = thisComp.layer(\"" + centerPoint + "\").transform.position[1];\n" +
-            "[x, y];"
-    aText.transform.anchorPoint.expression = expressions.textPosition;
-    // aText.property("ADBE Text Properties").property("ADBE Text Document")
-    //         .addToMotionGraphicsTemplateAs(comp, "Текст коллаута");
-    // aText.property("ADBE Text Properties").property("ADBE Text Document")
-    //         .expression = "text.sourceText.style.setFillColor(thisComp.layer(\"" + baseNull + "\").effect(\"textColor\")(\"Color\"))"
-
-    var textOpacity = aText.property("Opacity");
-    var textScale = aText.property("Scale");
-
-    textOpacity.addKey(animationEnd * 0.5);
-    textOpacity.addKey(animationEnd);
-    textOpacity.setValueAtKey(1, 0);
-    textOpacity.setValueAtKey(2, 100);
-
-    textScale.addKey(animationEnd * 0.5);
-    textScale.addKey(animationEnd);
-    textScale.setValueAtKey(1, [80, 80]);
-    textScale.setValueAtKey(2, [100, 100]); 
-    */
-
     var nullProps = comp.layers.addNull();
     nullProps.name = baseNull;
     nullProps.position.setValue([0, 0]);
@@ -272,8 +240,6 @@ function createCallout(comp, num) {
     addCheckBox(comp, nullProps, "innerCircleSwitch", "Включить внутренний круг");
     addCheckBox(comp, nullProps, "outerCircleSwitch", "Включить внешний круг");
     addCheckBox(comp, nullProps, "secondLineSwitch", "Включить вторую линию");
-
-    // addColorControl(comp, nullProps, "textColor", [0.9, 0.9, 0.95], "Цвет текста");
     addColorControl(comp, nullProps, "lineColor", [0.6, 0.6, 0.65], "Цвет линий");
     addColorControl(comp, nullProps, "arrowColor", [0.2, 0.2, 0.22], "Цвет указателя");
 
@@ -323,8 +289,6 @@ function createCallout(comp, num) {
     for (i = 0; i < lines.length; i++) {
         addShapeToLayer(comp, lines[i], line, [0.9,0.9,0.9], 100, 10, [0, 0], expressions.strokeColor, "", false);
         var lineLayer = comp.layers.byName(lines[i]);
-        //var textLayer = comp.layers.byName("textField");
-        //lineLayer.moveAfter(textLayer);
 
         var trim = lineLayer.property("ADBE Root Vectors Group")
                 .property("ADBE Vector Group")
@@ -476,21 +440,11 @@ function main () {
         slaveCenter.property("Position").expression = "var x = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[0];\n" + 
         "var y = comp(\"" + baseComp.name + "\").layer(\"" + mainCenter.name + "\").transform.position[1];\n" + 
         "[x, y]";
-
-        /*
-        textField = comp("2024_07_00_Минипроектор_на_потолке_ Linked Comp 02").layer("textField_768947");
-const m = thisComp.layer("mainNull_768947").effect("leftRightSwitch")("Checkbox").value;
-const modifier = m == 1 ? 1 : -1;
-const x = thisComp.layer("centerPoint_768947").transform.position[0] + (textField.sourceRectAtTime().width * 0.33) * modifier;
-const y = thisComp.layer("centerPoint_768947").transform.position[1] + 15;
-[x, y];
-        
-        */
         
         const baseNull = "mainNull_" + dig;
         const centerPoint = "centerPoint_" + dig;
+        const animationEnd = 0.6;
 
-        
         const exprs = {
             endPointExp: "textField = comp(\"" + baseComp.name + "\").layer(\"" + "textField_" + dig + "\") \n" + 
                 "const m = thisComp.layer(\"" + baseNull + "\").effect(\"leftRightSwitch\")(\"Checkbox\").value;\n" +
@@ -526,8 +480,6 @@ const y = thisComp.layer("centerPoint_768947").transform.position[1] + 15;
         aText.position.expression = exprs.textPosition;
         aText.transform.anchorPoint.expression = exprs.textAnchorPosition;
 
-        const animationEnd = 0.6;
-    
         var textOpacity = aText.property("Opacity");
         
         textOpacity.addKey(animationEnd * 0.5);
@@ -556,19 +508,3 @@ const y = thisComp.layer("centerPoint_768947").transform.position[1] + 15;
 }
 
 main();
-
-/*
-ADBE Vector Layer
-ADBE Root Vectors Group
-ADBE Vector Group
-ADBE Vectors Group
-ADBE Vector Shape - Group
-ADBE Vector Shape
-
-mainLine
-Contents
-Group 1
-Contents
-Path 1
-Path
-*/
