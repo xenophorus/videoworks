@@ -1,27 +1,24 @@
-﻿function processProperty(theProp) {
-    if (theProp.propertyType == PropertyType.PROPERTY) {
-        try {
-            log(theProp.name + " " + theProp.value);
-        } catch (e) {
-            log(theProp.name + " " + "NO VALUE");
-        }
-        if (theProp.name === "Path") {
-            log(1);
-        }
-    } else {
-        for (var i = 1; i <= theProp.numProperties; i++) {
-            processProperty(theProp.property(i));
-        }
-    }
-}
+﻿// function processProperty(theProp) {
+//     if (theProp.propertyType == PropertyType.PROPERTY) {
+//         try {
+//             log(theProp.name + " " + theProp.value);
+//         } catch (e) {
+//             log(theProp.name + " " + "NO VALUE");
+//         }
+//         if (theProp.name === "Path") {
+//             log(1);
+//         }
+//     } else {
+//         for (var i = 1; i <= theProp.numProperties; i++) {
+//             processProperty(theProp.property(i));
+//         }
+//     }
+// }
 
-function log(input) {
-    $.writeln(input);
-    var logFile = File("e:/logfile.txt");
-    logFile.open("a");
-    logFile.writeln(input);
-    logFile.close();
-}
+// function log(input) {
+//     $.writeln(input);
+
+// }
 
 
 function createNull(targetComp){
@@ -175,8 +172,6 @@ function addPropsToLine(layer, name, taperStartLength, taperStartWidth, expressi
         lineTrim.property("Start").expression = expressions.arrowTailTrimStart; 
         lineTrim.property("End").expression = expressions.arrowTailTrimEnd; 
 
-        processProperty(shapeGroup);
-
         shapeGroup.property("ADBE Vectors Group")
             .property("ADBE Vector Shape - Group")
             .property("ADBE Vector Shape").expression = "content(\"head\").content(\"Path 1\").path;";
@@ -186,7 +181,7 @@ function addPropsToLine(layer, name, taperStartLength, taperStartWidth, expressi
 
 function main() {
 
-    log("Starting at " + new Date().toTimeString() + "================================================");
+    // log("Starting at " + new Date().toTimeString() + "================================================");
     app.beginUndoGroup("Air Arrow");
     var comp = app.project.activeItem;
 
