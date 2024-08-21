@@ -1,4 +1,4 @@
-﻿function processProperty(theProp) {
+function processProperty(theProp) {
     if (theProp.propertyType == PropertyType.PROPERTY) {
         try {
             log(theProp.name + " " + theProp.value);
@@ -350,6 +350,8 @@ function createSizeArrow(baseCompName, comp, num) {
     const topNull = addNumToName("topNull", num);
     const shelfNull = addNumToName("shelfNull", num);
     const bottomNull = addNumToName("bottomNull", num);
+    const correctedBottomNull = addNumToName("correctedBottomNull", num);
+    const correctedTopNull = addNumToName("correctedTopNull", num);
     const animationStart = 0.0;
     const animationEnd = 1.0;
 
@@ -425,6 +427,8 @@ function createSizeArrow(baseCompName, comp, num) {
 
         strokeWidth: "thisComp.layer(\"" + mainNull + "\").effect(\"lineWidth\")(\"Slider\")",
 
+        outerWidth: "thisComp.layer(\"" + mainNull + "\").effect(\"outerLineStrokeWidth\")(\"Slider\")",
+
         extStrokeWidth: "thisComp.layer(\"" + mainNull + "\").effect(\"extLineStrokeWidth\")(\"Slider\")",
 
         extLineTopNull: "var mainPoint = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
@@ -480,9 +484,9 @@ function createSizeArrow(baseCompName, comp, num) {
                 "var extLineLen =  thisComp.layer(\"" + mainNull + "\").effect(\"outerLine\")(\"Slider\");\n" +
                 "[mainPoint[0] + extLineLen * Math.sin(angle), mainPoint[1] - extLineLen * Math.cos(angle)];", 
 
-        arrowTop: "thisComp.layer(\"" + lineTop + "\").transform.position;",
+        arrowTop: "thisComp.layer(\"" + correctedTopNull + "\").transform.position;",
 
-        arrowBottom: "thisComp.layer(\"" + lineBottom + "\").transform.position;",
+        arrowBottom: "thisComp.layer(\"" + correctedBottomNull + "\").transform.position;",
 
         arrowTopAngle: "var modifier = parseInt(thisComp.layer(\"" + mainNull + "\").effect(\"turnArrows\")(\"Checkbox\")) === 1 ? 0 : 180;\n" +
                 "thisComp.layer(\"" + mainNull + "\").effect(\"angle\")(\"Angle\") - 180 + modifier;",
@@ -517,10 +521,42 @@ function createSizeArrow(baseCompName, comp, num) {
         rectFillOpacity: "thisComp.layer(\"" + mainNull + "\").effect(\"labelFillOpacity\")(\"Slider\");",
 
         rectOpacity: "thisComp.layer(\"" + mainNull + "\").effect(\"labelOpacity\")(\"Slider\");",
+
+        correctionBottom: "var correction = thisComp.layer(\"" + mainNull + "\").effect(\"arrowCorrection\")(\"Slider\");\n" +
+                "var p1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
+                "var p2 = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
+                "var lineLength = Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2));\n" +
+                "var outline = thisComp.layer(\"" + mainNull + "\").effect(\"lineWidth\")(\"Slider\");\n" +
+                "var lineCoef = outline / lineLength;\n" +
+                "var arrowDirection = thisComp.layer(\"" + mainNull + "\").effect(\"turnArrows\")(\"Checkbox\") > 0 ? 1 : -1;\n" +
+                "var coef = correction / 1000 + lineCoef * 1.35 * arrowDirection;\n" +
+                "[p1[0] * coef + p2[0] * (1 - coef), p1[1] * coef + p2[1] * (1 - coef)]",
+
+        correctionTop: "var correction = thisComp.layer(\"" + mainNull + "\").effect(\"arrowCorrection\")(\"Slider\");\n" +
+                "var p1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
+                "var p2 = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
+                "var lineLength = Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2));\n" +
+                "var outline = thisComp.layer(\"" + mainNull + "\").effect(\"lineWidth\")(\"Slider\");\n" +
+                "var lineCoef = outline / lineLength;\n" +
+                "var arrowDirection = thisComp.layer(\"" + mainNull + "\").effect(\"turnArrows\")(\"Checkbox\") > 0 ? 1 : -1;\n" +
+                "var coef = correction / 1000 + lineCoef * 1.35 * arrowDirection;\n" +
+                "[p1[0] * (1 - coef) + p2[0] * coef, p1[1] * (1 - coef) + p2[1] * coef]",
+
+        correctionBottom1: "var correction = thisComp.layer(\"" + mainNull + "\").effect(\"arrowCorrection\")(\"Slider\");\n" +
+                "var p1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
+                "var p2 = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
+                "coef = correction / 1000;\n" +
+                "[p1[0] * coef + p2[0] * (1 - coef), p1[1] * coef + p2[1] * (1 - coef)]",
+
+        correctionTop1: "var correction = thisComp.layer(\"" + mainNull + "\").effect(\"arrowCorrection\")(\"Slider\");\n" +
+                "var p1 = thisComp.layer(\"" + lineTop + "\").transform.position;\n" +
+                "var p2 = thisComp.layer(\"" + lineBottom + "\").transform.position;\n" +
+                "var coef = correction / 1000;\n" +
+                "[p1[0] * (1 - coef) + p2[0] * coef, p1[1] * (1 - coef) + p2[1] * coef]"
     };
 
     var nullNames = [mainNull, lineCenter, lineExtTop, lineExtBottom, lineExtTailTop, lineExtTailBottom, 
-        shelfPointExt, outerTailTop, outerTailBottom, lineTop, lineBottom, shelfPoint];
+        shelfPointExt, outerTailTop, outerTailBottom, lineTop, lineBottom, shelfPoint, correctedTopNull, correctedBottomNull];
 
     for (var i = 0; i < nullNames.length; i++) {
         addNewNull(comp, nullNames[i], "[100, 100]", "");
@@ -534,6 +570,8 @@ function createSizeArrow(baseCompName, comp, num) {
     comp.layers.byName(outerTailTop).transform.position.expression = expressions.outerLineTopNull;
     comp.layers.byName(outerTailBottom).transform.position.expression = expressions.outerLineBottomNull;
     comp.layers.byName(shelfPointExt).transform.position.expression = expressions.shelfPointNull;
+    comp.layers.byName(correctedTopNull).transform.position.expression = expressions.correctionTop;
+    comp.layers.byName(correctedBottomNull).transform.position.expression = expressions.correctionBottom;
 
     var mainNullLayer = comp.layers.byName(mainNull);
     
@@ -548,12 +586,14 @@ function createSizeArrow(baseCompName, comp, num) {
     addSlider(comp, mainNullLayer, "lineBias", 50, "Отклонение плашки от линии", "");
     addSlider(comp, mainNullLayer, "arrowSize", 100, "Размер стрелок", "");
     addSlider(comp, mainNullLayer, "lineWidth", 5, "Толщина линий", "");
-    addSlider(comp, mainNullLayer, "extLineStrokeWidth", 3, "Толщина выносных линий", "");
+    addSlider(comp, mainNullLayer, "extLineStrokeWidth", 2, "Толщина выносных линий", "");
+    addSlider(comp, mainNullLayer, "outerLineStrokeWidth", 2, "Толщина внешних линий", "");
     addSlider(comp, mainNullLayer, "extLine", 300, "Длина выносной линии", "");
     addSlider(comp, mainNullLayer, "extLineTail", 30, "Длина хвоста выносной линии", "");
     addSlider(comp, mainNullLayer, "outerLine", 100, "Длина хвоста внешней стрелки", "");
     addSlider(comp, mainNullLayer, "pointSigns", 1, "Количество знаков после запятой", "");
     addSlider(comp, mainNullLayer, "fontSize", 75, "Размер шрифта", "");
+    addSlider(comp, mainNullLayer, "arrowCorrection", 0, "Корректировка стрелок", "");
 
     addAngleControl(mainNullLayer, "angle", 0, expressions.angle);
     addAngleControl(mainNullLayer, "extLineAngleControl_1", 0, "");
@@ -602,7 +642,7 @@ function createSizeArrow(baseCompName, comp, num) {
 
     var line = createShape([[100, 100], [300, 300]], [[0, 0], [0, 0]], [[0, 0], [0, 0]], false);
     
-    var lines = ["lineSize", "lineShelf", "lineShelfExt", "outerLineTop", "outerLineBottom"];
+    var lines = ["lineSize", "lineShelf", "lineShelfExt"];
     var extLines = ["lineExtTop", "lineExtBottom", "lineExtTailTop", "lineExtTailBottom"];
     var shelfLines = ["lineShelf", "lineShelfExt"];
     var outerLines = ["outerLineTop", "outerLineBottom"];
@@ -617,8 +657,13 @@ function createSizeArrow(baseCompName, comp, num) {
         addShapeToLayer(comp, extLines[i], line, [0.9,0.9,0.9], 100, 5, [0, 0], 
                         expressions.strokeColor, expressions.extStrokeWidth, "", "", false, [0, 0]);
     }
+
+    for (i = 0; i < outerLines.length; i++) {
+        addShapeToLayer(comp, outerLines[i], line, [0.9,0.9,0.9], 100, 5, [0, 0], 
+                        expressions.strokeColor, expressions.outerWidth, "", "", false, [0, 0]);
+    }
     
-    setPathExp(comp, "lineSize", lineTop, lineBottom);
+    setPathExp(comp, "lineSize", correctedTopNull, correctedBottomNull);
     setPathExp(comp, "lineExtTop", lineTop, lineExtTop);
     setPathExp(comp, "lineExtBottom", lineBottom, lineExtBottom);
     setPathExp(comp, "lineExtTailTop", lineTop, lineExtTailTop);
@@ -651,11 +696,11 @@ function createSizeArrow(baseCompName, comp, num) {
     arrowBottom.property("Rotation").expression = expressions.arrowBottomAngle;
     arrowBottom.moveToBeginning();
 
-    var figureToLock = lines.concat(["arrowTop", "arrowBottom"]).concat(extLines);
+    // var figureToLock = lines.concat(["arrowTop", "arrowBottom"]).concat(extLines);
     
-    for (var i = 0; i < figureToLock.length; i++) {
-        comp.layers.byName(figureToLock[i]).locked = true;
-    }
+    // for (var i = 0; i < figureToLock.length; i++) {
+    //     comp.layers.byName(figureToLock[i]).locked = true;
+    // }
 
     comp.layers.byName(lineTop).property("Position").expression = "comp(\"" + baseCompName + "\").layer(\"" + topNull +"\").transform.position";
     comp.layers.byName(lineBottom).property("Position").expression = "comp(\"" + baseCompName + "\").layer(\"" + bottomNull +"\").transform.position";
