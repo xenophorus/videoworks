@@ -1,18 +1,8 @@
 ﻿/**
 table todo:
-    1. DONE Ячейки привязываются к базовой. Расчет положения - (размер ячейки + зазор) * номер. Это даст возможность удалять ячейки. 
-       DONE - Если разные по размеру, где хранить значения? Dropdown menu?
-       DONE - Зазор может быть отрицательным
-    2. DONE текст ячейки привязывается к центру фигуры. У обеих анкор в центре. 
-    3. DONE Таблица создается с нуля
-    4. header cells, horizontal and vertical
-    5. import style, json or xml
-    6. basic style setup in start dialog
-    7. export style?
-    8. Вертикальный и горизонтальный зазоры
+    1. Анимация!
+    2. Парсить CSV и записывать данные прямо в текстовые поля
     
-
-
 */
 
 function processProperty(theProp) {
@@ -22,7 +12,7 @@ function processProperty(theProp) {
         } catch (e) {
             log(theProp.name + " " + "NO VALUE");
         }
-        if (theProp.name === "№ 1 2") {
+        if (theProp.name === "Position") {
             log(1);
         }
     } else {
@@ -96,7 +86,7 @@ function csvData(data, separator) {
             }
         }
     }
-    var firstElement = dataArray[0]
+    var firstElement = dataArray[0];
     for (var i = 0; i > dataArray.length; i++) {
         if (dataArray[i] !== firstElement) {
             throw new Error("Некорректный файл!");
@@ -120,6 +110,56 @@ function rectAddExpressions(comp, name, sizeExp, positionExp, scaleExp, anchorEx
     
     var rect = shapeGroup.property("Contents").property("ADBE Vector Shape - Rect");
     rect.property("Size").expression = sizeExp;
+}
+
+function rectAddAnimation(comp, name, typeAnim, direction, speed, position) {
+    var diff = 0.1;
+
+    var layer = comp.layers.byName(name);
+    var opacity = layer.property("Opacity");
+    
+    inKey = (position[0] - 1) * direction[0] * diff + (position[1] - 1) * direction[1] * diff;
+    outKey = inKey + speed * 0.1;
+
+    opacity.addKey(inKey);
+    opacity.addKey(outKey);
+
+    opacity.setValueAtKey(1, 0);
+    opacity.setValueAtKey(2, 100);
+    
+    // var position = layer.property("ADBE Root Vectors Group")
+    //             .property("ADBE Vector Group")
+    //             .property("ADBE Vectors Group")
+    //             .property("ADBE Vector Shape - Rect")
+    //             .property("ADBE Vector Rect Position");
+
+    var position = layer.property("ADBE Root Vectors Group")
+                .property("ADBE Vector Group")
+                .property("ADBE Vector Transform Group")
+                .property("ADBE Vector Position")
+                ;
+                
+    processProperty(position)
+    
+    position.addKey(inKey);
+    position.addKey(outKey);
+    
+    position.setValueAtKey(1, [-100, -100]);
+    position.setValueAtKey(2, [0, 0]);
+    
+    var scale = layer.property("ADBE Root Vectors Group")
+                .property("ADBE Vector Group")
+                .property("ADBE Vector Transform Group")
+                .property("ADBE Vector Scale");
+
+    scale.addKey(inKey);
+    scale.addKey(outKey);
+
+    scale.setValueAtKey(1, [50, 50]);
+    position.setValueAtKey(2, [100, 100]);
+
+
+
 
 }
 
@@ -195,6 +235,12 @@ function addTextField(comp, name, text, sourceExp, positionExp) {
 function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
     const comp = app.project.itemByID(compID);
     const mainNull = addNewNull(comp, "mainNull", "[100, 100]", "[100, 100]");
+    
+    if (csv || csv !== "") {
+        var csvLoaded = true;
+    } else {
+        var csvLoaded = false;
+    }
 
     const expressions = {
         textPosition: "try { \n" + 
@@ -218,7 +264,7 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
                 "    return x * 10 + thisComp.layer(\"" + mainNull.name + "\").effect(\"gap\")(\"Slider\") * (cellSize[direction] - 1);\n" +
                 "}\n" +
                 "[newSize(1), newSize(0)];",
-
+        
         cellAnchor: "var p = content(\"Group 1\").content(\"Rectangle Path 1\").size;\n" + 
                 "[p[0] / 2 * -1, p[1] / 2 * -1];",
 
@@ -233,19 +279,20 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
 
     var tableDimensions = new Array();
 
-    if (csv || csv !== "") {
+    if (csvLoaded) {
         var csvFile = new File(csv);
 
         try {
-
             var projData = app.project.importFile(new ImportOptions(csvFile));
             var aFile = comp.layers.add(projData);
             var data = aFile.property("ADBE Data Group").property("ADBE DataLayer Num Rows");
             processProperty(data)
 
 
-            var tempArray = csv.toLowerCase().split(".");
-            var extension = tempArray[tempArray.length - 1];
+            var tempArray = csv.split("\\");
+            var filename = tempArray[tempArray.length - 1];
+            var tmpExtension = filename.toLowerCase().split(".");
+            var extension = tmpExtension[tmpExtension.length - 1]
             var separator;
 
             if (extension === "csv") {
@@ -269,13 +316,13 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
         tableDimensions = [rows, columns];
     }
 
-    var dotsQuantity = Math.max(tableDimensions[0], tableDimensions[1]);
+    var dotsQuantity = Math.max(tableDimensions[0], tableDimensions[1]); 
 
     for (var i = 1; i <= dotsQuantity; i++) {
         addPointControl(mainNull, i, [-100, -100], tableDimensions);
     }
 
-    addSlider(comp, mainNull, "gap", 5, "Зазор", ""); /////////////////
+    addSlider(comp, mainNull, "gap", 0, "Зазор", ""); /////////////////
     addSlider(comp, mainNull, "multiplier", 10, "", "");
 
     for (var i = 1; i <= dotsQuantity; i++) {
@@ -288,35 +335,27 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
         for (var j = 1; j <= tableDimensions[1]; j++) {
             var cellName = i.toString() + "-" + j.toString();
             var textName = "t-" + cellName;
-            addRectangle(comp, cellName, [400, 150], [0.1, 0.3, 0.1], 100, 3, 
-                [0.1, 0.1, 0.3], 100, [100, 100]);
+            addRectangle(comp, cellName, [400, 150], [0.95, 0.95, 0.95], 100, 3, 
+                [0.2, 0.2, 0.2], 100, [100, 100]);
             rectAddExpressions(comp, cellName, expressions.cellSize, expressions.cellPosition, 
                 expressions.cellScale, expressions.cellAnchor);
-            addTextField(comp, textName, "cellText", "", expressions.textPosition);
+            rectAddAnimation(comp, cellName, 0, [1, 1], 5, [i, j])
 
+
+
+            if (csvLoaded) { 
+                if (j === 0) {
+                    addTextField(comp, textName, "cellData", 
+                    "thisComp.layer(\"" + filename + "\")(\"Data\")(\"Outline\")(" + j.toString() + ")", expressions.textPosition);
+                } else {
+                    addTextField(comp, textName, "cellData", 
+                    "thisComp.layer(\"" + filename + "\")(\"Data\")(\"Outline\")(" + j.toString() + ")(" + i.toString() + ")", expressions.textPosition);
+                }
+            } else {
+                addTextField(comp, textName, "cellText", "", expressions.textPosition);
+            }
         }
     }
-
-    // for (var i = 1; i <= tableDimensions[1]; i++) {
-    //     for (var j = 0; j < tableDimensions[0]; j++) {
-    //         if (j === 0) {
-                
-    //             addTextField(comp,"t-" + i.toString() + "-" + (j + 1).toString(), "cellData", 
-    //             "thisComp.layer(\"" + filename + "\")(\"Data\")(\"Outline\")(" + i.toString() + ")", expressions.textPosition);
-    //         } else {
-    //             addTextField(comp,"t-" + i.toString() + "-" + (j + 1).toString(), "cellData", 
-    //             "thisComp.layer(\"" + filename + "\")(\"Data\")(\"Outline\")(" + i.toString() + ")(" + j.toString() + ")", expressions.textPosition);
-    //         }
-    //     }
-    // }
-
-//    var fld = app.project.file.fsName;
-    // log(fld);
-    // log(compID);
-    // log(tableDimensions);
-    // log(csv);
-    // log(isHorizHeader);
-    // log(isVertHeader);
 
 }
 
@@ -495,9 +534,11 @@ function promptWindow() {
     btnOK.onClick = function() {
         var rowsNum = parseInt(rows.text);
         var columnsNum = parseInt(columns.text);
+        var selectedComp = dropMenu.selection.index;
+        var selectedID = compIDs[selectedComp];
         if (fileIsSelected || (rowsNum > 1 && columnsNum > 1)) {
             createTable(rowsNum, columnsNum, fileAddress.text, 
-                compIDs[selectedSeq], headerIsHoriz.value, headerIsVert.value);
+                selectedID, headerIsHoriz.value, headerIsVert.value);
             dialog.close();
            
         } else {
