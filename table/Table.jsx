@@ -8,11 +8,11 @@ table todo:
 function processProperty(theProp) {
     if (theProp.propertyType == PropertyType.PROPERTY) {
         try {
-            log(theProp.name + " " + theProp.value);
+            log(theProp.name + " " + "---" + theProp.matchName + "---" + " " + theProp.value);
         } catch (e) {
             log(theProp.name + " " + "NO VALUE");
         }
-        if (theProp.name === "Position") {
+        if (theProp.matchName === "ADBE Text Animators") {
             log(1);
         }
     } else {
@@ -112,14 +112,25 @@ function rectAddExpressions(comp, name, sizeExp, positionExp, scaleExp, anchorEx
     rect.property("Size").expression = sizeExp;
 }
 
-function rectAddAnimation(comp, name, typeAnim, direction, speed, position) {
-    var diff = 0.1;
+function rectAddAnimation(comp, name, typeAnim, direction, speed, position, bias, diff, correction) {
 
+    var opposingDirection = -1;
     var layer = comp.layers.byName(name);
     var opacity = layer.property("Opacity");
+
+    if (direction[0] + direction[1] > 0) {
+        var inKey = (position[0] - 1) * direction[0] * diff + (position[1] - 1) * direction[1] * diff;
+    } else if (direction[0] + direction[1] > -1) {
+        var inKey = (position[0] - 1) * direction[0] * diff + (position[1] - 1) * direction[1] * diff + correction * diff;
+    } else {
+        var inKey = (position[0] - 1) * direction[0] * diff + (position[1] - 1) * direction[1] * diff + correction * diff * 2;
+    }
+
+    var outKey = inKey + speed * 0.1;
+    var rectInitCoord = [bias * direction[1] * opposingDirection, bias * direction[0] * opposingDirection];
     
-    inKey = (position[0] - 1) * direction[0] * diff + (position[1] - 1) * direction[1] * diff;
-    outKey = inKey + speed * 0.1;
+    var easeIn = new KeyframeEase(0, 35);
+    var easeOut = new KeyframeEase(0, 35);
 
     opacity.addKey(inKey);
     opacity.addKey(outKey);
@@ -127,41 +138,107 @@ function rectAddAnimation(comp, name, typeAnim, direction, speed, position) {
     opacity.setValueAtKey(1, 0);
     opacity.setValueAtKey(2, 100);
     
-    // var position = layer.property("ADBE Root Vectors Group")
-    //             .property("ADBE Vector Group")
-    //             .property("ADBE Vectors Group")
-    //             .property("ADBE Vector Shape - Rect")
-    //             .property("ADBE Vector Rect Position");
+    opacity.setTemporalEaseAtKey(1, [easeIn]);
+    opacity.setTemporalEaseAtKey(2, [easeOut]);
 
-    var position = layer.property("ADBE Root Vectors Group")
+    var rectPosition = layer.property("ADBE Root Vectors Group")
                 .property("ADBE Vector Group")
                 .property("ADBE Vector Transform Group")
-                .property("ADBE Vector Position")
-                ;
-                
-    processProperty(position)
+                .property("ADBE Vector Position");
     
-    position.addKey(inKey);
-    position.addKey(outKey);
+    rectPosition.addKey(inKey);
+    rectPosition.addKey(outKey);
     
-    position.setValueAtKey(1, [-100, -100]);
-    position.setValueAtKey(2, [0, 0]);
+    rectPosition.setValueAtKey(1, rectInitCoord);
+    rectPosition.setValueAtKey(2, [0, 0]);
     
-    var scale = layer.property("ADBE Root Vectors Group")
+    rectPosition.setTemporalEaseAtKey(1, [easeIn]);
+    rectPosition.setTemporalEaseAtKey(2, [easeOut]);
+    
+    var rectScale = layer.property("ADBE Root Vectors Group")
                 .property("ADBE Vector Group")
                 .property("ADBE Vector Transform Group")
                 .property("ADBE Vector Scale");
 
-    scale.addKey(inKey);
-    scale.addKey(outKey);
+    rectScale.addKey(inKey);
+    rectScale.addKey(outKey);
 
-    scale.setValueAtKey(1, [50, 50]);
-    position.setValueAtKey(2, [100, 100]);
-
-
-
+    rectScale.setValueAtKey(1, [50, 50]);
+    rectScale.setValueAtKey(2, [100, 100]);
+    
+    rectScale.setTemporalEaseAtKey(1, [easeIn, easeIn]);
+    rectScale.setTemporalEaseAtKey(2, [easeOut, easeOut]);
 
 }
+
+function textAddAnimation(comp, name, typeAnim, direction, speed, position, bias, diff, correction) {
+
+    var layer = comp.layers.byName(name);
+    var opacity = layer.property("Opacity");
+    var textScale = layer.property("Scale");
+    
+    if (direction[0] + direction[1] > 0) {
+        var inKey = (position[0] - 1) * direction[0] * diff + (position[1] - 1) * direction[1] * diff;
+    } else if (direction[0] + direction[1] > -1) {
+        var inKey = (position[0] - 1) * direction[0] * diff + (position[1] - 1) * direction[1] * diff + correction * diff;
+    } else {
+        var inKey = (position[0] - 1) * direction[0] * diff + (position[1] - 1) * direction[1] * diff + correction * diff * 2;
+    }
+
+    var outKey = inKey + speed * 0.1;
+    var textInitCoord = [bias * direction[1] , bias * direction[0], 0];
+    
+    var easeIn = new KeyframeEase(0, 35);
+    var easeOut = new KeyframeEase(0, 35);
+
+    opacity.addKey(inKey);
+    opacity.addKey(outKey);
+    opacity.setValueAtKey(1, 0);
+    opacity.setValueAtKey(2, 100);
+    
+    opacity.setTemporalEaseAtKey(1, [easeIn]);
+    opacity.setTemporalEaseAtKey(2, [easeOut]);
+    
+    textScale.addKey(inKey);
+    textScale.addKey(outKey);
+    textScale.setValueAtKey(1, [50, 50]);
+    textScale.setValueAtKey(2, [100, 100]);
+    
+    textScale.setTemporalEaseAtKey(1, [easeIn, easeIn, easeIn]);
+    textScale.setTemporalEaseAtKey(2, [easeOut, easeOut, easeOut]);    
+    
+    var animPos = layer.Text.Animators.addProperty("ADBE Text Animator");
+    var textPos = animPos.property("ADBE Text Animator Properties").addProperty("ADBE Text Position 3D");
+    textPos.addKey(inKey);
+    textPos.addKey(outKey);
+    textPos.setValueAtKey(1, textInitCoord);
+    textPos.setValueAtKey(2, [0, 0, 0]);
+    
+    textPos.setTemporalEaseAtKey(1, [easeIn]);
+    textPos.setTemporalEaseAtKey(2, [easeOut]);
+    
+    
+    //var tPos = layer.addProperty("ADBE Text Animators") //.addProperty("ADBE Text Position 3D");
+    //var tScale = layer.addProperty("ADBE Text Scale 3D");
+    
+    //processProperty(layer);
+    
+        /*
+            
+            .property("ADBE Transform Group").property("ADBE Position")
+    
+    ADBE Transform Group
+    ADBE Position
+    
+    */
+    
+    // processProperty(position)
+    
+    
+    
+    
+    
+    }
 
 function addNewNull(comp, name, scaleExp, positionExp) {
     var nullLayer = comp.layers.addNull();
@@ -232,9 +309,15 @@ function addTextField(comp, name, text, sourceExp, positionExp) {
     }
 }
 
-function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
+function createTable(rows, columns, csv, compID, animValue, biasValue, distValue, directionComboValue) {
     const comp = app.project.itemByID(compID);
     const mainNull = addNewNull(comp, "mainNull", "[100, 100]", "[100, 100]");
+    
+    const diff = biasValue / 250;
+    const directions = [[1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1], [0, 0]];
+    const direction = directions[directionComboValue];
+    const animationType = 0;
+    const animSpeed = animValue * 0.1;
     
     if (csv || csv !== "") {
         var csvLoaded = true;
@@ -275,7 +358,6 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
         cellScale: "[100, 100];",
 
     }
-
 
     var tableDimensions = new Array();
 
@@ -339,9 +421,8 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
                 [0.2, 0.2, 0.2], 100, [100, 100]);
             rectAddExpressions(comp, cellName, expressions.cellSize, expressions.cellPosition, 
                 expressions.cellScale, expressions.cellAnchor);
-            rectAddAnimation(comp, cellName, 0, [1, 1], 5, [i, j])
-
-
+            rectAddAnimation(comp, cellName, animationType, direction, animSpeed, [i, j], distValue, diff, dotsQuantity)
+            
 
             if (csvLoaded) { 
                 if (j === 0) {
@@ -354,6 +435,7 @@ function createTable(rows, columns, csv, compID, isHorizHeader, isVertHeader) {
             } else {
                 addTextField(comp, textName, "cellText", "", expressions.textPosition);
             }
+            textAddAnimation(comp, textName, animationType, direction, animSpeed, [i, j], distValue, diff, dotsQuantity);
         }
     }
 
@@ -405,12 +487,13 @@ function promptWindow() {
     tabMain.spacing = spacings; 
     tabMain.margins = margins; 
 
+/*
     var tabStyles = tabs.add("tab", undefined, undefined, {name: "Стили таблицы"}); 
     tabStyles.text = "Стили таблицы"; 
     tabStyles.orientation = "column"; 
     tabStyles.alignChildren = ["left","top"]; 
     tabStyles.spacing = spacings; 
-    tabStyles.margins = margins; 
+    tabStyles.margins = margins; */
 
     var mainGroup = tabMain.add("group", undefined, {name: "mainGroup"}); 
     mainGroup.orientation = "column"; 
@@ -426,19 +509,19 @@ function promptWindow() {
 
     var headerPanel = topGroup.add("panel", undefined, undefined, {name: "headerPanel"}); 
     headerPanel.text = "Введите размер таблицы:"; 
-    headerPanel.preferredSize.height = elHeight * 1.8; 
-    headerPanel.preferredSize.width = elMaxWidth - 300; 
+    headerPanel.preferredSize.height = elHeight * 2; 
+    headerPanel.preferredSize.width = 150; 
     headerPanel.orientation = "row"; 
     headerPanel.alignChildren = ["right","center"]; 
     headerPanel.spacing = spacings; 
     headerPanel.margins = margins; 
 
     var tableHeaderSelect = topGroup.add("panel", undefined, undefined, {name: "tableHeaderSelect"});
-    tableHeaderSelect.text = "Заголовки таблицы:"; 
-    tableHeaderSelect.preferredSize.height = elHeight * 1.8; 
+    tableHeaderSelect.text = "Настройки таблицы:"; 
+    tableHeaderSelect.preferredSize.height = elHeight * 2; 
     tableHeaderSelect.preferredSize.width = elMaxWidth - 200;
     tableHeaderSelect.orientation = "column"; 
-    tableHeaderSelect.alignChildren = ["left","center"]; 
+    tableHeaderSelect.alignChildren = ["right","center"]; 
     tableHeaderSelect.spacing = spacings; 
     tableHeaderSelect.margins = margins; 
 
@@ -468,11 +551,85 @@ function promptWindow() {
     columns.preferredSize.width = 50; 
     columns.text = "0";
 
-    var headerIsHoriz = tableHeaderSelect.add("checkbox", undefined, undefined, {name: "headerIsHoriz"}); 
-    headerIsHoriz.text = "Горизонтальные заголовки"; 
+    //var animSlider = tableHeaderSelect.add("slider", 40, 0, 100);
 
-    var headerIsVert = tableHeaderSelect.add("checkbox", undefined, undefined, {name: "headerIsVert"}); 
-    headerIsVert.text = "Вертикальные заголовки"; 
+    //var biasSlider = tableHeaderSelct.add("slider", 40, 0, 100);
+
+    var droplist = [
+        "Сверху слева - вниз вправо",
+        "Сверху вниз",
+        "Сверху справа - вниз влево",
+        "Справа налево",
+        "Снизу справа - вверх влево",
+        "Снизу вверх",
+        "Снизу слева - вверх вправо",
+        "Слева направо",
+        "Без движения"
+    ]
+    
+    var group1 = tableHeaderSelect.add("group", undefined, {name: "group1"}); 
+    group1.orientation = "row"; 
+    group1.preferredSize.width = 245;
+    group1.alignChildren = ["right","center"]; 
+    group1.spacing = 15; 
+    group1.margins = 0; 
+
+    var statictext1 = group1.add("statictext", undefined, undefined, {name: "statictext1"}); 
+    statictext1.text = "Время анимации:"; 
+
+    var sliderAnimation = group1.add("slider", undefined, undefined, undefined, undefined, {name: "sliderAnimation"}); 
+    sliderAnimation.minvalue = 0; 
+    sliderAnimation.maxvalue = 100; 
+    sliderAnimation.value = 40; 
+    sliderAnimation.preferredSize.width = 160; 
+    sliderAnimation.alignment = ["right","top"]; 
+
+    var group2 = tableHeaderSelect.add("group", undefined, {name: "group2"}); 
+    group2.orientation = "row"; 
+    group2.preferredSize.width = 245;
+    group2.alignChildren = ["right","center"]; 
+    group2.spacing = 10; 
+    group2.margins = 0; 
+
+    var statictext2 = group2.add("statictext", undefined, undefined, {name: "statictext2"}); 
+    statictext2.text = "Время задержки:"; 
+
+    var sliderBias = group2.add("slider", undefined, undefined, undefined, undefined, {name: "sliderBias"}); 
+    sliderBias.minvalue = 0; 
+    sliderBias.maxvalue = 100; 
+    sliderBias.value = 24; 
+    sliderBias.preferredSize.width = 160; 
+    sliderBias.alignment = ["right","top"]; 
+    
+    var group3 = tableHeaderSelect.add("group", undefined, {name: "group2"}); 
+    group3.orientation = "row"; 
+    group3.preferredSize.width = 245;
+    group3.alignChildren = ["right","center"]; 
+    group3.spacing = 10; 
+    group3.margins = 0; 
+
+    var statictext3 = group3.add("statictext", undefined, undefined, {name: "statictext3"}); 
+    statictext3.text = "Расстояние:"; 
+
+    var sliderDist = group3.add("slider", undefined, undefined, undefined, undefined, {name: "sliderDist"}); 
+    sliderDist.minvalue = 0; 
+    sliderDist.maxvalue = 1000; 
+    sliderDist.value = 150; 
+    sliderDist.preferredSize.width = 160; 
+    sliderDist.alignment = ["right","top"]; 
+    
+    var group4 = tableHeaderSelect.add("group", undefined, {name: "group3"}); 
+    group4.orientation = "row"; 
+    group4.preferredSize.width = 245;
+    group4.alignChildren = ["right","center"]; 
+    group4.spacing = 10; 
+    group4.margins = 0; 
+    
+    var statictext2 = group4.add("statictext", undefined, undefined, {name: "statictext3"}); 
+    statictext2.text = "Направление:"; 
+
+    var dropDirectionMenu = group4.add("dropdownlist", undefined, droplist);
+    dropDirectionMenu.selection = 0;
 
     var filePanel = mainGroup.add("panel", undefined, undefined, {name: "filePanel"}); 
     filePanel.text = "или укажите CSV-файл:"
@@ -538,7 +695,7 @@ function promptWindow() {
         var selectedID = compIDs[selectedComp];
         if (fileIsSelected || (rowsNum > 1 && columnsNum > 1)) {
             createTable(rowsNum, columnsNum, fileAddress.text, 
-                selectedID, headerIsHoriz.value, headerIsVert.value);
+                selectedID, sliderAnimation.value, sliderBias.value, sliderDist.value, dropDirectionMenu.selection.index);
             dialog.close();
            
         } else {
