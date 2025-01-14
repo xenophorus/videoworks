@@ -583,6 +583,14 @@ function promptWindow() {
     sliderAnimation.value = 40; 
     sliderAnimation.preferredSize.width = 160; 
     sliderAnimation.alignment = ["right","top"]; 
+    
+    var textSliderAnim = group1.add("statictext", undefined, undefined, {name: "textSliderAnim"}); 
+    textSliderAnim.text = sliderAnimation.value; 
+    textSliderAnim.preferredSize.width = 30;
+    
+    sliderAnimation.onChanging = function () {
+        textSliderAnim.text = sliderAnimation.value; 
+    }
 
     var group2 = tableHeaderSelect.add("group", undefined, {name: "group2"}); 
     group2.orientation = "row"; 
@@ -601,6 +609,14 @@ function promptWindow() {
     sliderBias.preferredSize.width = 160; 
     sliderBias.alignment = ["right","top"]; 
     
+    var textSliderBias = group2.add("statictext", undefined, undefined, {name: "textSliderBias"}); 
+    textSliderBias.text = sliderBias.value; 
+    textSliderBias.preferredSize.width = 30;
+    
+    sliderBias.onChanging = function () {
+        textSliderBias.text = sliderBias.value; 
+    }
+    
     var group3 = tableHeaderSelect.add("group", undefined, {name: "group2"}); 
     group3.orientation = "row"; 
     group3.preferredSize.width = 245;
@@ -617,6 +633,14 @@ function promptWindow() {
     sliderDist.value = 150; 
     sliderDist.preferredSize.width = 160; 
     sliderDist.alignment = ["right","top"]; 
+    
+    var textSliderDist = group3.add("statictext", undefined, undefined, {name: "textSliderDist"}); 
+    textSliderDist.text = sliderDist.value; 
+    textSliderDist.preferredSize.width = 30;
+    
+    sliderDist.onChanging = function () {
+        textSliderDist.text = sliderDist.value; 
+    }
     
     var group4 = tableHeaderSelect.add("group", undefined, {name: "group3"}); 
     group4.orientation = "row"; 
@@ -693,7 +717,7 @@ function promptWindow() {
         var columnsNum = parseInt(columns.text);
         var selectedComp = dropMenu.selection.index;
         var selectedID = compIDs[selectedComp];
-        if (fileIsSelected || (rowsNum > 1 && columnsNum > 1)) {
+        if (fileIsSelected || (rowsNum >= 1 && columnsNum >= 1)) {
             createTable(rowsNum, columnsNum, fileAddress.text, 
                 selectedID, sliderAnimation.value, sliderBias.value, sliderDist.value, dropDirectionMenu.selection.index);
             dialog.close();
