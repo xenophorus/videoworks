@@ -275,8 +275,8 @@ function addPointControl(layer, name, position, dimensions) {
 
         newPoints: "var num = " + (name - 1).toString() + ";\n" + 
                 "var prev = effect(`point_${num}`)(\"Point\")\n" + 
-                "var row = effect(\"row_" + limitNum(name - 1, dimensions[0]).toString() + "\")(\"Slider\");\n" + 
-                "var col = effect(\"column_" +  limitNum(name - 1, dimensions[1]).toString() + "\")(\"Slider\");\n" + 
+                "var row = effect(\"col_" + limitNum(name - 1, dimensions[0]).toString() + "\")(\"Slider\");\n" +
+                "var col = effect(\"row_" +  limitNum(name - 1, dimensions[1]).toString() + "\")(\"Slider\");\n" +
                 "var aGap = effect(\"gap\")(\"Slider\");\n" + 
                 "[prev[0] + row * 10 + aGap, prev[1] + col * 10 + aGap];"
     }
@@ -338,7 +338,7 @@ function createTable(rows, columns, csv, compID, animValue, biasValue, distValue
         cellSize: "var coords = effect(\"cellCoordinates\")(\"Point\");\n" +
                 "var cellSize = effect(\"cellSize\")(\"Point\");\n" +
                 "function newSize(direction) {\n" +
-                "    var axis = direction === 0 ? \"column_\" : \"row_\" ;\n" +
+                "    var axis = direction === 0 ? \"row_\" : \"col_\" ;\n" +
                 "    var d = cellSize[direction];\n" +
                 "    var x = 0;\n" +
                 "    for (var i = 0; i < d; i++) {\n" +
@@ -408,8 +408,8 @@ function createTable(rows, columns, csv, compID, animValue, biasValue, distValue
     addSlider(comp, mainNull, "multiplier", 10, "", "");
 
     for (var i = 1; i <= dotsQuantity; i++) {
-        addSlider(comp, mainNull, "row_" + i.toString(), 40, "Столбец " + i.toString(), ""); //////////////////////
-        addSlider(comp, mainNull, "column_" + i.toString(), 10, "Строка " + i.toString(), "");
+        addSlider(comp, mainNull, "col_" + i.toString(), 40, "Столбец " + i.toString(), ""); //////////////////////
+        addSlider(comp, mainNull, "row_" + i.toString(), 10, "Строка " + i.toString(), "");
     }
 
 
