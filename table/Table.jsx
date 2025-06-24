@@ -275,8 +275,8 @@ function addPointControl(layer, name, position, dimensions) {
 
         newPoints: "var num = " + (name - 1).toString() + ";\n" + 
                 "var prev = effect(`point_${num}`)(\"Point\")\n" + 
-                "var row = effect(\"col_" + limitNum(name - 1, dimensions[0]).toString() + "\")(\"Slider\");\n" +
-                "var col = effect(\"row_" +  limitNum(name - 1, dimensions[1]).toString() + "\")(\"Slider\");\n" +
+                "var row = effect(`col_${num}`)(\"Slider\");\n" +
+                "var col = effect(`row_${num}`)(\"Slider\");\n" +
                 "var aGap = effect(\"gap\")(\"Slider\");\n" + 
                 "[prev[0] + row * 10 + aGap, prev[1] + col * 10 + aGap];"
     }
