@@ -59,6 +59,8 @@ function tracePath(comp, selectedLayer, path){
         // Create tracer null
     var newNull = createNull(comp);
     newNull.moveBefore(selectedLayer);
+    
+    newNull.name = "trace_" + selectedLayer.name; // + ": " + path.parentProperty.name + " [" + pathHierarchy.join(".") + "]";
 
         // Add expression control effects to the null
     var nullControl = newNull.property("ADBE Effect Parade").addProperty("Pseudo/ADBE Trace Path");
@@ -71,33 +73,23 @@ function tracePath(comp, selectedLayer, path){
                 "value \r" +
                 "}";
     newNull.position.expression =
-                "var pathLayer = thisComp.layer(\"" + selectedLayer.name + "\"); \r" +
+                "var pathLayer = thisComp.layer(`${thisLayer.name.substring(6)}`); \r" +
                 "var progress = thisLayer.effect(\"Pseudo/ADBE Trace Path\")(\"Pseudo/ADBE Trace Path-0001\")/100; \r" +
                 "var pathToTrace = pathLayer" + pathPath + "; \r" +
                 "pathLayer.toComp(pathToTrace.pointOnPath(progress));";
     newNull.rotation.expression =
-                "var pathToTrace = thisComp.layer(\"" + selectedLayer.name + "\")" + pathPath + "; \r" +
+                "var pathToTrace = thisComp.layer(`${thisLayer.name.substring(6)}`)" + pathPath + "; \r" +
                 "var progress = thisLayer.effect(\"Pseudo/ADBE Trace Path\")(\"Pseudo/ADBE Trace Path-0001\")/100; \r" +
                 "var pathTan = pathToTrace.tangentOnPath(progress); \r" +
                 "radiansToDegrees(Math.atan2(pathTan[1],pathTan[0]));";
-    newNull.name = "trace_" + selectedLayer.name; // + ": " + path.parentProperty.name + " [" + pathHierarchy.join(".") + "]";
+    
     newNull.label = 10;
+    
+    //newNull.shy = true;
 
     return newNull.name;
 };
 
-
-function addNewNull(comp, name, scaleExp, positionExp) {
-    var nullLayer = comp.layers.addNull();
-    nullLayer.name = name;
-    if (scaleExp !== "") {
-        nullLayer.property("Scale").expression = scaleExp;
-    }
-    if (positionExp !== "") {
-        nullLayer.property("Position").expression = positionExp;
-    }
-    return nullLayer;
-}
 
 function addSlider(comp, layer, name, value, showName) {
     var slider = layer.property("ADBE Effect Parade").addProperty("ADBE Slider Control");
@@ -184,14 +176,25 @@ function main() {
     // log("Starting at " + new Date().toTimeString() + "================================================");
     app.beginUndoGroup("Air Arrow");
     var comp = app.project.activeItem;
+    
+    //comp.hideShyLayers = true;
 
     if (comp instanceof CompItem) {
         var num = generateRandomNumber().toString().split(".")[1].slice(0, 3);
-        var name = "airArrow_" + num;
-        var mainNull = addNewNull(comp, "mainNull_" + num, "[100, 100]", "-100, 100");
+        var name = "arrow_" + num;
 
-        // mainNull.
+        
+        var line = createShape([[0, -500], [0, 500]], [[0, 20], [0, 0]], [[0, 10], [0, 10]], false);
+        var line2 = createShape([[0, -500], [0, 500]], [[20, 0], [0, 0]], [[10, 0], [10, 0]], false);
 
+        var layer = comp.layers.addShape();
+        layer.name = name;
+
+        var linePath = addNewLine(layer, "head", line);
+        var pathName = tracePath(comp, layer, linePath);
+        
+        var mainNull = comp.layers.byName("trace_" + name);
+        //addNewNull(comp, "mainNull_" + num, "[100, 100]", "-100, 100");
 
         addSlider(comp, mainNull, "arrowProportions", 78, "Пропорции стрелки"); // Проценты
         addSlider(comp, mainNull, "arrowLength", 20, "Длина стрелки");
@@ -199,43 +202,37 @@ function main() {
         addSlider(comp, mainNull, "tailWidth", 50, "Ширина хвоста");
         addSlider(comp, mainNull, "arrowOpacity", 50, "Прозрачность стрелки");
         addColorControl(comp, mainNull, "arrowColor", [0.7, 0.7, 0.9], "Цвет стрелки");
+
+
         
-        var line = createShape([[100, 300], [1200, 300]], [[0, 20], [0, 0]], [[0, 10], [0, 10]], false);
-        var line2 = createShape([[100, 300], [1200, 300]], [[20, 0], [0, 0]], [[10, 0], [10, 0]], false);
-
-        var layer = comp.layers.addShape();
-        layer.name = name;
-
-        var linePath = addNewLine(layer, "head", line);
-        var pathName = tracePath(comp, layer, linePath);
         addNewLine(layer, "tail", line2);
 
         expressions = {
             
-            arrowColor: "thisComp.layer(\"" + mainNull.name + "\").effect(\"arrowColor\")(\"Color\");",
+            arrowColor: "thisComp.layer(`trace_${thisLayer.name}`).effect(\"arrowColor\")(\"Color\");",
     
-            headLen: "thisComp.layer(\"" + mainNull.name + "\").effect(\"headLen\")(\"Slider\");",
+            headLen: "thisComp.layer(`trace_${thisLayer.name}`).effect(\"headLen\")(\"Slider\");",
     
-            tailLen: "thisComp.layer(\"" + mainNull.name + "\").effect(\"tailLen\")(\"Slider\");",
+            tailLen: "thisComp.layer(`trace_${thisLayer.name}`).effect(\"tailLen\")(\"Slider\");",
             
-            headWidth: "thisComp.layer(\"" + mainNull.name + "\").effect(\"headWidth\")(\"Slider\");",
+            headWidth: "thisComp.layer(`trace_${thisLayer.name}`).effect(\"headWidth\")(\"Slider\");",
     
-            tailWidth: "thisComp.layer(\"" + mainNull.name + "\").effect(\"tailWidth\")(\"Slider\");",
+            tailWidth: "thisComp.layer(`trace_${thisLayer.name}`).effect(\"tailWidth\")(\"Slider\");",
     
-            arrowOpacity: "thisComp.layer(\"" + mainNull.name + "\").effect(\"arrowOpacity\")(\"Slider\");",
+            arrowOpacity: "thisComp.layer(`trace_${thisLayer.name}`).effect(\"arrowOpacity\")(\"Slider\");",
 
-            arrowHeadTrimStart: "var arrowLen = thisComp.layer(\"" + mainNull.name + "\").effect(\"arrowLength\")(\"Slider\");\n" + 
-                    "var progress = thisComp.layer(\"" + pathName + "\").effect(\"Trace Path\")(\"Progress\");\n" + 
+            arrowHeadTrimStart: "var arrowLen = thisComp.layer(`trace_${thisLayer.name}`).effect(\"arrowLength\")(\"Slider\");\n" + 
+                    "var progress = thisComp.layer(`trace_${thisLayer.name}`).effect(\"Trace Path\")(\"Progress\");\n" + 
                     "content(\"head\").content(\"Trim Paths 1\").start = arrowLen + progress;",
 
-            arrowHeadTrimEnd: "var proportions = thisComp.layer(\"" + mainNull.name + "\").effect(\"arrowProportions\")(\"Slider\");\n" + 
-                    "var arrowLen = thisComp.layer(\"" + mainNull.name + "\").effect(\"arrowLength\")(\"Slider\");\n" + 
-                    "var progress = thisComp.layer(\"" + pathName + "\").effect(\"Trace Path\")(\"Progress\");\n" + 
+            arrowHeadTrimEnd: "var proportions = thisComp.layer(`trace_${thisLayer.name}`).effect(\"arrowProportions\")(\"Slider\");\n" + 
+                    "var arrowLen = thisComp.layer(`trace_${thisLayer.name}`).effect(\"arrowLength\")(\"Slider\");\n" + 
+                    "var progress = thisComp.layer(`trace_${thisLayer.name}`).effect(\"Trace Path\")(\"Progress\");\n" + 
                     "content(\"head\").content(\"Trim Paths 1\").end = arrowLen * proportions / 100 + progress;",
 
             arrowTailTrimStart: "content(\"head\").content(\"Trim Paths 1\").end;",
 
-            arrowTailTrimEnd: "thisComp.layer(\"" + pathName + "\").effect(\"Trace Path\")(\"Progress\");",
+            arrowTailTrimEnd: "thisComp.layer(`trace_${thisLayer.name}`).effect(\"Trace Path\")(\"Progress\");",
 
             lineOpacity: "if (effect(\"arrowBlink\")(\"Checkbox\") == 1) {\n" + 
                 "    thisProperty.loopOut(\"cycle\");\n" + 
