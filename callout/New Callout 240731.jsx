@@ -406,10 +406,8 @@ function main () {
     app.beginUndoGroup("New callout");
     if (baseComp instanceof CompItem) {
         var dig = generateRandomNumber().toString().split(".")[1].slice(0, 6);
-        var baseWidth = baseComp.width;
-        var baseHeight = baseComp.height;
         var name = "callout_" + dig;
-        var newCallout = app.project.items.addComp(name, baseWidth, baseHeight, 1, 60, 50);
+        var newCallout = app.project.items.addComp(name, baseComp.width, baseComp.height, 1, 60, 50);
 
         baseComp.layers.add(newCallout);
         log("Composition " + name + " created");
@@ -421,10 +419,10 @@ function main () {
         mainArrow.name = "mainArrow" + dig;
         mainArrow.property("Scale").expression = "[100, 100]";
         //processProperty(mainArrow)
-        mainArrow.property("Position").setValue([100, 300]);
+        mainArrow.property("Position").setValue([300, 500]);
         var mainCenter = baseComp.layers.addNull();
         mainCenter.name = "mainCenter" + dig;
-        mainCenter.property("Position").setValue([300, 200]);
+        mainCenter.property("Position").setValue([500, 400]);
         mainCenter.property("Scale").expression = "[100, 100]";
 
         var slaveCenter = newCallout.layers.byName("centerPoint_" + dig);

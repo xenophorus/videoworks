@@ -1,4 +1,4 @@
-function processProperty(theProp) {
+﻿function processProperty(theProp) {
     if (theProp.propertyType == PropertyType.PROPERTY) {
         try {
             log(theProp.name + " " + theProp.value);
@@ -736,7 +736,7 @@ function main() {
     if (baseComp instanceof CompItem) {
         var num = generateRandomNumber().toString().split(".")[1].slice(0, 6);
         var name = "sizeArrow_" + num;
-        var newSizeArrow = app.project.items.addComp(name, 3840, 2160, 1, 60, 50);
+        var newSizeArrow = app.project.items.addComp(name, baseComp.width, baseComp.height, 1, 60, 50);
     
         baseComp.layers.add(newSizeArrow);
         var bName = baseComp.name;
@@ -746,7 +746,9 @@ function main() {
         baseComp.layers.byName(name).locked = true;
 
         var nullNames = ["topNull", "shelfNull", "bottomNull", "textNull"];
-        var nullPos = [[1500, 900], [1300, 1200], [500, 900], [400, 400]];
+        var nullPos = [[baseComp.width * 0.8, baseComp.height * 0.6], [baseComp.width * 0.5, baseComp.height * 0.8], 
+                       [baseComp.width * 0.3, baseComp.height * 0.6], [baseComp.width * 0.2, baseComp.height * 0.2]];
+        //var nullPos = [[1500, 900], [1300, 1200], [500, 900], [400, 400]];
 
         for (i = 0; i < nullNames.length; i++) {
             var nullName = addNumToName(nullNames[i], num);
