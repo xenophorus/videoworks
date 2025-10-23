@@ -1,0 +1,12 @@
+*.idea*
+*__pycache__*
+*.venv*
+*.ipynb_checkpoints*
+*.vscode*
+*cmake-build-debug*
+/analytics/kiva/*.csv
+/sqlalch/test_data/*
+/datasets/
+*.exe
+*.o
+
