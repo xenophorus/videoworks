@@ -9,4 +9,8 @@
 /datasets/
 *.exe
 *.o
+*.mp4
+*.MP4
 
+
+video_check/openh264-1.8.0-win64.dll
